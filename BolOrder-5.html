@@ -1,0 +1,1989 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>BolOrder — Voice Ordering for Cafés &amp; Canteens</title>
+<style>
+  :root{
+    --bg:#f6f1e8;
+    --card:#fffdf9;
+    --ink:#231a14;
+    --muted:#8b7d72;
+    --accent:#c2410c;
+    --accent-soft:#fdece1;
+    --amber:#f59e0b;
+    --line:#eadfd2;
+    --dark:#1b1310;
+    --green:#15803d;
+    --radius:18px;
+    --shadow:0 1px 2px rgba(35,26,20,.04), 0 12px 30px -18px rgba(35,26,20,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,"Noto Sans Devanagari",sans-serif;
+    background:
+      radial-gradient(900px 500px at 12% -10%, #fff6e8 0%, transparent 60%),
+      radial-gradient(800px 500px at 100% 0%, #fdeee4 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .app{max-width:1240px;margin:0 auto;padding:22px 20px 60px}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+  .brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+  .mark{
+    width:46px;height:46px;border-radius:14px;flex:none;
+    background:linear-gradient(140deg,#f97316,#c2410c 55%,#7c2d12);
+    color:#fff;display:grid;place-items:center;font-weight:800;font-size:21px;
+    box-shadow:0 10px 22px -10px rgba(194,65,12,.85);
+    letter-spacing:-.5px;
+  }
+  .brand h1{font-size:20px;margin:0;letter-spacing:-.4px}
+  .brand p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+  .langs{display:flex;gap:6px;background:#fff;border:1px solid var(--line);padding:5px;border-radius:999px;box-shadow:var(--shadow)}
+  .langs button{
+    border:0;background:transparent;padding:8px 15px;border-radius:999px;cursor:pointer;
+    font-size:13px;font-weight:600;color:var(--muted);font-family:inherit;transition:.18s;
+  }
+  .langs button:hover{color:var(--ink);background:#faf5ee}
+  .langs button.on{background:var(--ink);color:#fff}
+  .langs button.on:hover{background:var(--ink)}
+
+  /* ---------- stage ---------- */
+  .stage{
+    position:relative;overflow:hidden;
+    background:linear-gradient(150deg,#2a1e18 0%,#170f0c 70%);
+    border-radius:26px;padding:26px 26px 22px;color:#f7ece2;
+    box-shadow:0 24px 50px -28px rgba(27,19,16,.8);
+    margin-bottom:18px;
+  }
+  .stage::after{
+    content:"";position:absolute;inset:auto -60px -120px auto;width:340px;height:340px;
+    background:radial-gradient(circle,rgba(249,115,22,.28),transparent 68%);pointer-events:none;
+  }
+  .stage-top{display:flex;align-items:center;gap:20px;flex-wrap:wrap;position:relative;z-index:1}
+  .mic-wrap{position:relative;flex:none;width:104px;height:104px;display:grid;place-items:center}
+  .mic{
+    width:88px;height:88px;border-radius:50%;border:0;cursor:pointer;
+    background:linear-gradient(145deg,#fb923c,#c2410c);
+    color:#fff;font-size:31px;display:grid;place-items:center;
+    box-shadow:0 16px 34px -12px rgba(251,146,60,.85), inset 0 1px 0 rgba(255,255,255,.35);
+    transition:transform .16s ease, box-shadow .2s;
+    position:relative;z-index:2;
+  }
+  .mic:hover{transform:scale(1.05)}
+  .mic:active{transform:scale(.97)}
+  .mic.rec{background:linear-gradient(145deg,#ef4444,#b91c1c)}
+  .ring{
+    position:absolute;inset:0;border-radius:50%;border:2px solid rgba(251,146,60,.5);
+    opacity:0;pointer-events:none;
+  }
+  .listening .ring{animation:ring 1.8s ease-out infinite}
+  .listening .ring:nth-child(2){animation-delay:.6s}
+  .listening .ring:nth-child(3){animation-delay:1.2s}
+  @keyframes ring{0%{transform:scale(.85);opacity:.75}100%{transform:scale(1.65);opacity:0}}
+
+  .stage-copy{flex:1;min-width:260px}
+  .hint-line{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:#c9a68c;font-weight:700;margin-bottom:8px}
+  .you-said{
+    font-size:23px;line-height:1.35;font-weight:600;letter-spacing:-.3px;
+    min-height:32px;color:#fff;
+  }
+  .you-said .ph{color:#7d6553;font-weight:500;font-style:italic;font-size:19px}
+  .reply{
+    margin-top:12px;display:inline-flex;align-items:flex-start;gap:9px;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+    padding:10px 14px;border-radius:14px;font-size:14.5px;line-height:1.45;color:#f3e3d5;
+    max-width:100%;
+  }
+  .reply b{color:#fdba74;font-weight:700}
+  .reply .dot{width:7px;height:7px;border-radius:50%;background:#4ade80;margin-top:7px;flex:none;box-shadow:0 0 10px #4ade80}
+  .wave{display:flex;align-items:center;gap:3px;height:22px;flex:none}
+  .wave i{width:3px;height:5px;border-radius:2px;background:#fb923c;opacity:.35;transition:.2s}
+  .listening .wave i{animation:bar .9s ease-in-out infinite;opacity:1}
+  .listening .wave i:nth-child(2){animation-delay:.1s}
+  .listening .wave i:nth-child(3){animation-delay:.2s}
+  .listening .wave i:nth-child(4){animation-delay:.3s}
+  .listening .wave i:nth-child(5){animation-delay:.4s}
+  .listening .wave i:nth-child(6){animation-delay:.5s}
+  @keyframes bar{0%,100%{height:5px}50%{height:20px}}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;position:relative;z-index:1}
+  .chip{
+    border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);
+    color:#e7d3c4;padding:7px 13px;border-radius:999px;font-size:12.5px;cursor:pointer;
+    font-family:inherit;transition:.16s;
+  }
+  .chip:hover{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}
+  .chips .lead{font-size:12px;color:#a3856f;align-self:center;margin-right:2px;font-weight:600}
+
+  .typebar{display:flex;gap:8px;margin-top:14px;position:relative;z-index:1}
+  .typebar input{
+    flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+    color:#fff;padding:12px 15px;border-radius:12px;font-size:14px;font-family:inherit;outline:none;
+  }
+  .typebar input::placeholder{color:#947d6c}
+  .typebar input:focus{border-color:rgba(251,146,60,.6);background:rgba(255,255,255,.11)}
+  .typebar button{
+    border:0;background:#fb923c;color:#241209;font-weight:700;padding:0 20px;border-radius:12px;
+    cursor:pointer;font-size:14px;font-family:inherit;transition:.16s;
+  }
+  .typebar button:hover{background:#fdba74}
+
+  /* ---------- agent transcript ---------- */
+  .thread{
+    max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
+    padding:2px 6px 2px 0;scrollbar-width:thin;
+  }
+  .thread::-webkit-scrollbar{width:5px}
+  .thread::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:9px}
+  .bubble{
+    max-width:88%;padding:9px 13px;border-radius:14px;font-size:14px;line-height:1.5;
+    animation:bub .24s ease;
+  }
+  @keyframes bub{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .bubble.agent{
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:#f3e3d5;
+    align-self:flex-start;border-bottom-left-radius:5px;
+  }
+  .bubble.you{
+    background:rgba(251,146,60,.15);border:1px solid rgba(251,146,60,.35);color:#ffe6d2;
+    align-self:flex-end;border-bottom-right-radius:5px;
+  }
+  .bubble b{color:#fdba74}
+  .bubble .who{
+    display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+    opacity:.5;margin-bottom:2px;font-weight:800;
+  }
+  .you-said.live{font-size:15px;font-weight:500;color:#a3856f;font-style:italic;min-height:20px;margin-top:8px}
+  .stage-right{display:flex;flex-direction:column;align-items:flex-end;gap:12px;flex:none}
+  .status{
+    display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;
+    letter-spacing:.1em;text-transform:uppercase;color:#c9a68c;white-space:nowrap;
+  }
+  .status i{width:7px;height:7px;border-radius:50%;background:#8b7d72;display:inline-block}
+  .status.listening i{background:#4ade80;box-shadow:0 0 9px #4ade80;animation:pulseDot 1.2s infinite}
+  .status.speaking i{background:#fb923c;box-shadow:0 0 9px #fb923c;animation:pulseDot .9s infinite}
+  .status.thinking i{background:#facc15;box-shadow:0 0 9px #facc15;animation:pulseDot .7s infinite}
+  @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.3}}
+  .hf{
+    border:1px solid var(--line);background:#fff;color:var(--muted);padding:8px 14px;
+    border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;gap:7px;box-shadow:var(--shadow);transition:.16s;
+  }
+  .hf:hover{color:var(--ink)}
+  .hf i{width:7px;height:7px;border-radius:50%;background:#c9b8a8;display:inline-block}
+  .hf.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .hf.on i{background:#4ade80;box-shadow:0 0 8px #4ade80}
+
+  /* ---------- demo controls ---------- */
+  .hf.demo{background:linear-gradient(140deg,#f97316,#c2410c);color:#fff;border-color:transparent;
+    box-shadow:0 10px 22px -12px rgba(194,65,12,.9)}
+  .hf.demo i{background:#fff;box-shadow:none}
+  .hf.demo:hover{color:#fff;filter:brightness(1.06)}
+  .hf.demo.on{background:var(--ink);border-color:var(--ink)}
+  .hf.demo.on i{background:#f87171;box-shadow:0 0 8px #f87171}
+
+  /* ---------- combos ---------- */
+  .combo-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px;padding:0 14px 12px}
+  .combo{
+    position:relative;text-align:left;border:1px dashed #eec9b2;
+    background:linear-gradient(160deg,#fff8f1,#fffdfb);border-radius:13px;
+    padding:11px 12px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;
+    gap:2px;transition:.15s;
+  }
+  .combo:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 10px 22px -18px rgba(194,65,12,.8)}
+  .c-tag{
+    position:absolute;top:9px;right:9px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;
+    font-weight:800;color:#fff;background:var(--accent);padding:2px 6px;border-radius:5px;
+  }
+  .c-name{font-size:12.5px;font-weight:800;padding-right:46px;letter-spacing:-.1px}
+  .c-in{font-size:10.5px;color:var(--muted);line-height:1.4}
+  .c-price{font-size:12px;font-weight:800;color:var(--accent);margin-top:3px}
+  .c-price s{color:#bcaea0;font-weight:600;margin-left:5px;font-size:11px}
+  .c-price em{
+    font-style:normal;font-size:9px;background:#eaf6ec;color:var(--green);
+    padding:2px 6px;border-radius:5px;margin-left:5px;font-weight:800;
+  }
+
+  /* ---------- kitchen status ---------- */
+  .kitchen{
+    display:none;align-items:center;gap:16px;flex-wrap:wrap;
+    background:#fffdf9;border:1px solid var(--line);border-radius:14px;
+    padding:12px 18px;margin-bottom:16px;box-shadow:var(--shadow);
+    animation:bub .3s ease;
+  }
+  .kitchen.show{display:flex}
+  .k-token{font-size:15px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+  .k-label{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-left:7px}
+  .k-steps{display:flex;align-items:center;gap:7px;margin-left:auto;flex-wrap:wrap}
+  .k-step{
+    font-size:11.5px;font-weight:700;color:#b3a598;background:#f6efe6;
+    padding:5px 12px;border-radius:999px;transition:.3s;
+  }
+  .k-step.on{background:#fdece1;color:var(--accent)}
+  .k-step.done{background:#eaf6ec;color:var(--green)}
+  .k-eta{font-size:12px;font-weight:700;color:var(--muted);min-width:64px;text-align:right}
+
+  /* ---------- today strip ---------- */
+  .today{
+    display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap;
+    font-size:12px;color:var(--muted);margin-top:20px;
+  }
+  .today b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .today .sim{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;background:#f0e7db;
+    color:#a1907f;padding:2px 7px;border-radius:999px;font-weight:800}
+
+  .voiceline{
+    margin-top:10px;font-size:11px;letter-spacing:.04em;color:#8d7563;
+    display:flex;align-items:center;gap:6px;position:relative;z-index:1;
+  }
+  .voiceline::before{content:"\1F509 ";font-size:10px;opacity:.75}
+
+  /* ---------- layout ---------- */
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;align-items:start}
+  @media(max-width:920px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card-head{display:flex;align-items:center;gap:10px;padding:16px 18px 12px}
+  .card-head h2{font-size:14.5px;margin:0;letter-spacing:.02em}
+  .card-head .count{font-size:11.5px;color:var(--muted);background:#f4ece1;padding:3px 9px;border-radius:999px;font-weight:600}
+  .card-head .spacer{margin-left:auto}
+  .ghost{
+    border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:9px;
+    padding:6px 11px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;transition:.15s;
+  }
+  .ghost:hover{color:var(--accent);border-color:#f0c9b3;background:var(--accent-soft)}
+  .ghost:disabled{opacity:.4;cursor:default}
+
+  /* menu */
+  .menu{display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:10px;padding:0 14px 16px}
+  .tile{
+    text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;
+    padding:12px 12px 11px;cursor:pointer;font-family:inherit;transition:.15s;
+    display:flex;flex-direction:column;gap:1px;position:relative;overflow:hidden;
+  }
+  .tile:hover{border-color:#f0c9b3;transform:translateY(-2px);box-shadow:0 10px 20px -14px rgba(194,65,12,.6)}
+  .tile:active{transform:translateY(0)}
+  .tile .emoji{font-size:20px;line-height:1.2;margin-bottom:5px}
+  .tile .tname{font-size:13px;font-weight:700;letter-spacing:-.1px}
+  .tile .thi{font-size:11.5px;color:var(--muted)}
+  .tile .price{font-size:12.5px;font-weight:700;color:var(--accent);margin-top:5px}
+  .tile .plus{
+    position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;
+    background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;
+    font-size:14px;font-weight:700;line-height:1;
+  }
+
+  /* order */
+  .order-body{padding:0 14px 14px;min-height:120px}
+  .empty{
+    text-align:center;color:var(--muted);font-size:13px;padding:26px 12px;line-height:1.6;
+  }
+  .empty .big{font-size:26px;display:block;margin-bottom:8px;opacity:.6}
+  .row{
+    display:flex;align-items:center;gap:11px;padding:9px 8px;border-radius:11px;
+    border-bottom:1px solid #f6eee4;
+  }
+  .row:last-child{border-bottom:0}
+  .row.flash{animation:flash .9s ease}
+  @keyframes flash{0%{background:#fff4e6}45%{background:#ffe8d5}100%{background:transparent}}
+  .row.enter{animation:enter .3s ease}
+  @keyframes enter{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+  .qty{display:flex;align-items:center;gap:2px;background:#f8f2e9;border-radius:9px;padding:2px;flex:none}
+  .qty button{
+    width:22px;height:22px;border:0;background:transparent;border-radius:7px;cursor:pointer;
+    color:#8b7d72;font-size:14px;font-weight:700;font-family:inherit;line-height:1;display:grid;place-items:center;
+  }
+  .qty button:hover{background:#fff;color:var(--accent)}
+  .qty span{min-width:16px;text-align:center;font-size:12.5px;font-weight:700}
+  .rname{flex:1;font-size:13px;font-weight:600;line-height:1.3}
+  .rname small{display:block;color:var(--muted);font-weight:500;font-size:11px;margin-top:1px}
+  .rline{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+
+  .totals{padding:12px 18px 0;border-top:1px dashed var(--line);margin-top:6px}
+  .trow{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);padding:3px 0}
+  .trow.grand{
+    font-size:16px;font-weight:800;color:var(--ink);padding-top:9px;margin-top:5px;
+    border-top:1px solid var(--line);
+  }
+  .trow.grand span:last-child{color:var(--accent)}
+  .pay{display:flex;gap:8px;padding:14px 18px 18px}
+  .btn-primary{
+    flex:1;border:0;border-radius:12px;padding:13px;cursor:pointer;font-family:inherit;
+    font-size:14px;font-weight:700;color:#fff;
+    background:linear-gradient(140deg,#ea580c,#b91c1c);
+    box-shadow:0 12px 24px -14px rgba(185,28,28,.9);transition:.16s;
+  }
+  .btn-primary:hover{filter:brightness(1.06)}
+  .btn-primary:disabled{background:#e5dbd0;color:#a89a8d;box-shadow:none;cursor:default;filter:none}
+
+  .footnote{text-align:center;font-size:11.5px;color:#a99a8d;margin-top:22px;line-height:1.6}
+
+  /* modal */
+  .modal{
+    position:fixed;inset:0;background:rgba(23,15,12,.55);backdrop-filter:blur(3px);
+    display:none;place-items:center;padding:20px;z-index:50;
+  }
+  .modal.open{display:grid}
+  .receipt{
+    background:#fffdf9;border-radius:16px;width:100%;max-width:372px;max-height:88vh;overflow:auto;
+    padding:24px 22px;box-shadow:0 30px 60px -20px rgba(0,0,0,.5);
+    animation:pop .26s cubic-bezier(.2,.9,.3,1.2);
+  }
+  @keyframes pop{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+  .receipt h3{margin:0;font-size:16px;letter-spacing:-.2px;text-align:center}
+  .receipt .sub{text-align:center;font-size:11.5px;color:var(--muted);margin:4px 0 16px;line-height:1.5}
+  .rline2{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:4px 0}
+  .rline2 .q{color:var(--muted);flex:none;min-width:22px}
+  .rline2 .n{flex:1}
+  .rline2 .a{font-variant-numeric:tabular-nums;font-weight:600}
+  .dash{border:0;border-top:1px dashed #ded2c4;margin:12px 0}
+  .modal-actions{display:flex;gap:8px;margin-top:18px}
+  .modal-actions button{flex:1;border-radius:11px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid var(--line);background:#fff;color:var(--ink)}
+  .modal-actions .dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .thanks{text-align:center;font-size:12px;color:var(--muted);margin-top:14px}
+  @media print{
+    body *{visibility:hidden}
+    .modal,.modal *{visibility:visible}
+    .modal{position:absolute;inset:0;background:#fff;display:block;padding:0}
+    .receipt{box-shadow:none;max-width:100%;margin:0 auto}
+    .modal-actions,.thanks{display:none}
+  }
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div id="fatal" style="display:none;background:#7f1d1d;color:#fff;padding:14px 18px;font:14px/1.5 'Segoe UI',system-ui,sans-serif;margin:0"></div>
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <div class="mark">B</div>
+      <div>
+        <h1>BolOrder</h1>
+        <p>Voice ordering for cafés &amp; canteens</p>
+      </div>
+    </div>
+    <div class="langs" id="langs">
+      <button data-lang="auto" class="on">Auto</button>
+      <button data-lang="en">English</button>
+      <button data-lang="hi">हिंदी</button>
+      <button data-lang="hinglish">Hinglish</button>
+    </div>
+    <button class="hf" id="handsFree" aria-pressed="false"><i></i>Hands-free</button>
+    <button class="hf demo" id="demoBtn"><i></i>Play demo</button>
+  </header>
+
+  <section class="stage" id="stage">
+    <div class="stage-top">
+      <div class="mic-wrap" id="micWrap">
+        <span class="ring"></span><span class="ring"></span><span class="ring"></span>
+        <button class="mic" id="micBtn" aria-label="Start voice ordering">🎙</button>
+      </div>
+      <div class="stage-copy">
+        <div class="hint-line" id="hintLine">Tap the mic, or say “Hey BolOrder”</div>
+        <div class="thread" id="thread"></div>
+        <div class="you-said live" id="youSaid"></div>
+      </div>
+      <div class="stage-right">
+        <div class="status ready" id="status"><i></i>Ready</div>
+        <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+
+    <div class="chips" id="chips"><span class="lead">Try:</span></div>
+
+    <form class="typebar" id="typeForm" autocomplete="off">
+      <input id="typeInput" placeholder="Or type your order — “ek masala dosa aur do chai”" aria-label="Type your order"/>
+      <button type="submit">Send</button>
+    </form>
+    <div class="voiceline" id="voiceInfo"></div>
+  </section>
+
+  <div class="kitchen" id="kitchen">
+    <div><span class="k-token" id="kToken">#1043</span><span class="k-label">Kitchen</span></div>
+    <div class="k-steps" id="kSteps">
+      <span class="k-step">Placed</span>
+      <span class="k-step">Preparing</span>
+      <span class="k-step">Ready</span>
+    </div>
+    <div class="k-eta" id="kEta">~6 min</div>
+  </div>
+
+  <div class="grid">
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Menu</h2>
+        <span class="count" id="menuCount"></span>
+        <span class="spacer"></span>
+        <span style="font-size:11.5px;color:var(--muted)">Tap to add</span>
+      </div>
+      <div class="combo-strip" id="comboStrip"></div>
+      <div class="menu" id="menu"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Your Order</h2>
+        <span class="count" id="cartCount">0 items</span>
+        <span class="spacer"></span>
+        <button class="ghost" id="undoBtn" disabled>↺ Undo</button>
+        <button class="ghost" id="clearBtn">Clear</button>
+      </div>
+      <div class="order-body" id="orderBody"></div>
+      <div class="totals" id="totals"></div>
+      <div class="pay">
+        <button class="btn-primary" id="billBtn" disabled>Generate bill</button>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="today" id="today"></div>
+
+  <p class="footnote" id="footnote">Speak naturally — add, remove, change quantities, or ask for the bill. Works in English, Hindi and Hinglish.</p>
+</div>
+
+<div class="modal" id="modal">
+  <div class="receipt" id="receipt"></div>
+</div>
+
+<script>
+/* ============================================================
+   BolOrder — multilingual ordering core
+   Pure logic, no DOM. Safe to run under Node for testing.
+   ============================================================ */
+/*===CORE_START===*/
+const MENU = [
+  {id:'masala_dosa', en:'Masala Dosa', hi:'मसाला डोसा', hl:'masala dosa', price:80,  emoji:'🥞', aliases:['masala dosa','masala dose','masala dhosa','masala dosai','मसाला डोसा']},
+  {id:'plain_dosa',  en:'Plain Dosa',  hi:'सादा डोसा',  hl:'plain dosa',  price:60,  emoji:'🫓', aliases:['plain dosa','sada dosa','dosa','डोसा','सादा डोसा','प्लेन डोसा']},
+  {id:'idli',        en:'Idli (2 pcs)',hi:'इडली',       hl:'idli',        price:40,  emoji:'🍚', aliases:['idli','idly','इडली']},
+  {id:'vada',        en:'Medu Vada',   hi:'मेदू वड़ा',  hl:'vada',        price:35,  emoji:'🍩', aliases:['medu vada','vada','wada','वड़ा','मेदू वड़ा']},
+  {id:'poha',        en:'Poha',        hi:'पोहा',       hl:'poha',        price:30,  emoji:'🍛', aliases:['poha','pohe','पोहा']},
+  {id:'samosa',      en:'Samosa',      hi:'समोसा',      hl:'samosa',      price:25,  emoji:'🥟', aliases:['samosa','samose','समोसा','समोसे']},
+  {id:'sandwich',    en:'Veg Sandwich',hi:'वेज सैंडविच',hl:'veg sandwich',price:50,  emoji:'🥪', aliases:['sandwich','veg sandwich','सैंडविच']},
+  {id:'burger',      en:'Veg Burger',  hi:'वेज बर्गर',  hl:'veg burger',  price:70,  emoji:'🍔', aliases:['burger','veg burger','बर्गर']},
+  {id:'fries',       en:'French Fries',hi:'फ्रेंच फ्राइज़',hl:'fries',    price:60,  emoji:'🍟', aliases:['fries','french fries','finger chips','फ्राइज़','फ्राइज']},
+  {id:'pavbhaji',    en:'Pav Bhaji',   hi:'पाव भाजी',   hl:'pav bhaji',   price:90,  emoji:'🍲', aliases:['pav bhaji','pavbhaji','भाजी','पाव भाजी']},
+  {id:'biryani',     en:'Veg Biryani', hi:'वेज बिरयानी',hl:'veg biryani', price:120, emoji:'🍚', aliases:['biryani','biriyani','बिरयानी']},
+  {id:'paneer',      en:'Paneer Tikka',hi:'पनीर टिक्का',hl:'paneer tikka',price:150, emoji:'🧆', aliases:['paneer tikka','paneer','पनीर टिक्का','पनीर']},
+  {id:'chai',        en:'Masala Chai', hi:'मसाला चाय',  hl:'chai',        price:20,  emoji:'☕', aliases:['masala chai','chai','tea','चाय','मसाला चाय']},
+  {id:'coffee',      en:'Filter Coffee',hi:'फिल्टर कॉफ़ी',hl:'filter coffee',price:25,emoji:'☕', aliases:['filter coffee','coffee','kaapi','कॉफ़ी','कॉफी','फिल्टर कॉफी','फिल्टर कॉफ़ी']},
+  {id:'cold_coffee', en:'Cold Coffee', hi:'कोल्ड कॉफ़ी',hl:'cold coffee', price:70,  emoji:'🥤', aliases:['cold coffee','कोल्ड कॉफ़ी','कोल्ड कॉफी']},
+  {id:'coke',        en:'Cold Drink',  hi:'कोल्ड ड्रिंक',hl:'coke',       price:40,  emoji:'🥤', aliases:['cold drink','coke','cola','pepsi','thums up','soft drink','कोक','कोल्ड ड्रिंक']},
+  {id:'lassi',       en:'Sweet Lassi', hi:'लस्सी',      hl:'lassi',       price:50,  emoji:'🥛', aliases:['lassi','लस्सी']},
+  {id:'gulab',       en:'Gulab Jamun', hi:'गुलाब जामुन',hl:'gulab jamun', price:40,  emoji:'🍮', aliases:['gulab jamun','gulab','jamun','गुलाब जामुन']},
+  {id:'water',       en:'Water Bottle',hi:'पानी',       hl:'paani',       price:20,  emoji:'💧', aliases:['water bottle','water','paani','pani','पानी','बोतल']}
+];
+const ITEM_BY_ID = {};
+MENU.forEach(function(m){ ITEM_BY_ID[m.id] = m; });
+
+/* ---------- combo meals ----------
+   need     : what in the cart triggers the offer ("2 burgers")
+   contains : what the combo actually puts on the tray                */
+const COMBOS = [
+  {id:'combo_burger', en:'Burger Combo', hi:'बर्गर कॉम्बो', hl:'burger combo', emoji:'🍔', price:199,
+   den:'two veg burgers with fries and a cold drink', dhi:'दो वेज बर्गर, फ्राइज़ और कोल्ड ड्रिंक के साथ',
+   need:{burger:2},
+   contains:[{id:'burger',qty:2},{id:'fries',qty:1},{id:'coke',qty:1}],
+   aliases:['burger combo','burger meal','बर्गर कॉम्बो']},
+  {id:'combo_chai', en:'Chai & Samosa Combo', hi:'चाय-समोसा कॉम्बो', hl:'chai samosa combo', emoji:'☕', price:75,
+   den:'two masala chai with two samosas', dhi:'दो मसाला चाय और दो समोसे',
+   need:{chai:2},
+   contains:[{id:'chai',qty:2},{id:'samosa',qty:2}],
+   aliases:['chai samosa combo','chai combo','चाय समोसा कॉम्बो','चाय कॉम्बो']},
+  {id:'combo_dosa', en:'Dosa Duo Combo', hi:'डोसा डुओ कॉम्बो', hl:'dosa combo', emoji:'🥞', price:179,
+   den:'two masala dosa with two filter coffees', dhi:'दो मसाला डोसा और दो फिल्टर कॉफ़ी',
+   need:{masala_dosa:2},
+   contains:[{id:'masala_dosa',qty:2},{id:'coffee',qty:2}],
+   aliases:['dosa combo','dosa duo combo','डोसा कॉम्बो']},
+  {id:'combo_biryani', en:'Biryani Feast Combo', hi:'बिरयानी फीस्ट कॉम्बो', hl:'biryani combo', emoji:'🍚', price:399,
+   den:'two veg biryani with two lassi and two gulab jamun', dhi:'दो वेज बिरयानी, दो लस्सी और दो गुलाब जामुन',
+   need:{biryani:2},
+   contains:[{id:'biryani',qty:2},{id:'lassi',qty:2},{id:'gulab',qty:2}],
+   aliases:['biryani combo','biryani feast','बिरयानी कॉम्बो']}
+];
+const COMBO_BY_ID = {};
+COMBOS.forEach(function(c){ COMBO_BY_ID[c.id] = c; });
+function unitById(id){ return ITEM_BY_ID[id] || COMBO_BY_ID[id] || null; }
+
+const NUM = {
+  'one':1,'ek':1,'a':1,'an':1,'single':1,
+  'two':2,'do':2,'dho':2,
+  'three':3,'teen':3,'tin':3,
+  'four':4,'char':4,'chaar':4,
+  'five':5,'paanch':5,'panch':5,
+  'six':6,'chhe':6,'che':6,'chah':6,'chhah':6,
+  'seven':7,'saat':7,'sat':7,
+  'eight':8,'aath':8,'ath':8,
+  'nine':9,'nau':9,
+  'ten':10,'das':10,'dus':10,
+  'eleven':11,'twelve':12,'fifteen':15,'twenty':20,
+  'एक':1,'दो':2,'तीन':3,'चार':4,'पांच':5,'पाँच':5,'छह':6,'छः':6,'सात':7,'आठ':8,'नौ':9,'दस':10
+};
+
+/* intent keywords — checked in the order listed below */
+const KW = {
+  clear: ['clear cart','clear everything','clear all','clear','reset','empty cart','sab hata','sab clear','sab kuch hata','sab kuch clear','cancel all','cancel everything','delete all','remove all','sab cancel','poora hata','sab hatao','everything',
+          'सब हटा','सब साफ','सब कुछ हटा','सब क्लियर','पूरा हटा','सब मिटा','सारा हटा'],
+  bill:  ['bill','total','kitna','kitne','amount','how much','paisa','calculate','bill banao','bana do','bill bana','check','hisaab',
+          'बिल','कुल','कितना','कितने','रकम','हिसाब','पैसा','बना दो'],
+  read:  ['read order','read the order','read my order','read it','my order','what is my order','whats my order','order batao','order bata do','batao','sunao','repeat','phir se bolo','order dikhao','show order','kya order','order kya','order sunao',
+          'ऑर्डर बताओ','ऑर्डर सुनाओ','मेरा ऑर्डर','क्या ऑर्डर','बताओ','सुनाओ','दोहराओ','फिर से बोलो','ऑर्डर दिखाओ'],
+  done:  ['done',"that s it",'thats it','that is it','bas','place order','confirm order','order confirm','checkout','ho gaya','bas itna','finish','ok done','thats all',
+          'बस','ऑर्डर कन्फर्म','कन्फर्म','हो गया','बस इतना','पक्का करो','ऑर्डर पक्का'],
+  undo:  ['undo','undo karo','wapas','pichla','wapas karo','last change undo',
+          'अनडू','वापस करो','पिछला','वापस'],
+  remove:['remove','delete','cancel','hata','hatao','hata do','hata de','nikal','nikalo','nikal do','nahi chahiye','mat do','without','cut','no','not','band karo','mat',
+          'हटा','हटाओ','हटा दो','हटा दे','निकाल','निकालो','नहीं चाहिए','मत दो','बंद करो'],
+  inc:   ['ek aur','aur ek','one more','two more','do aur','teen aur','ek zyada','ek extra','more','zyada','extra','add more',
+          'एक और','और एक','दो और','तीन और','ज़्यादा','ज्यादा'],
+  set:   ['change','update','set','make it','make the','make','badal','badlo','modify','instead','kar do','kardo','kar de','kar dijiye','rakh do',
+          'कर दो','करदो','बदल','बदलो','सेट','कर दीजिए','रख दो'],
+  add:   ['add','add karo','add kar','jodo','jod do','daal do','dal do','order','i want','i need','give me','chahiye','de do','dedo','la do','lagao','mangwana','le lo',
+          'जोड़','जोड़ो','जोड़ दो','डाल','डालो','डाल दो','चाहिए','दे दो','ले आओ']
+};
+const INTENT_ORDER = ['clear','done','bill','read','undo','remove','inc','set','add'];
+
+/* multi-word phrases that must not be split apart */
+const PROTECT = ['ek aur','do aur','teen aur','one more','two more','three more','ek zyada','ek extra','एक और','दो और','तीन और'];
+
+/* verb phrases that are not quantities ("paani de do" is 1 water, not 2) */
+const VERBS = ['de do','dedo','de dijiye','kar do','kardo','kar de','kar dijiye','bana do','banado','hata do','hata de','hatao','nikal do','nikalo','jod do','jodo','daal do','dal do','le lo','la do','add karo','add kar','order karo','mangwana','rakh do','badal do',
+  'कर दो','करदो','कर दीजिए','दे दो','देदो','दे दीजिए','बना दो','हटा दो','हटा दे','निकाल दो','जोड़ दो','डाल दो','ले लो','ला दो','जोड़ो','डालो','निकालो','हटाओ','रख दो','बदल दो'];
+
+function norm(s){
+  s = String(s||'').toLowerCase();
+  s = s.replace(/[\u0966-\u096F]/g, function(d){ return String(d.charCodeAt(0)-0x0966); });
+  s = s.replace(/[.,!?;:"'`()\[\]{}\u2013\u2014\/\\|]/g,' ');
+  s = s.replace(/\s+/g,' ').trim();
+  return s;
+}
+function escapeRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function hasWord(hay, needle){
+  if(/[\u0900-\u097F]/.test(needle)) return hay.indexOf(needle) !== -1;
+  const re = new RegExp('(^|[^a-z])' + escapeRe(needle) + '($|[^a-z])');
+  return re.test(hay);
+}
+function detectIntent(c){
+  if(!c) return null;
+  for(let i=0;i<INTENT_ORDER.length;i++){
+    const k = INTENT_ORDER[i], list = KW[k];
+    for(let j=0;j<list.length;j++){
+      if(hasWord(c, list[j])) return k;
+    }
+  }
+  return null;
+}
+
+/* longest alias found in the clause wins */
+function matchItem(clause){
+  let best = null, bestLen = -1;
+  const alt = clause.replace(/([a-z]{3,})s\b/g, '$1');
+  for(let i=0;i<MENU.length;i++){
+    const it = MENU[i];
+    for(let j=0;j<it.aliases.length;j++){
+      const al = it.aliases[j];
+      if(al.length > bestLen && (hasWord(clause, al) || hasWord(alt, al))){ best = it; bestLen = al.length; }
+    }
+  }
+  if(best) return best;
+  /* one-character tolerance for speech-recognition slips ("samossa", "dose") */
+  const toks = clause.split(' ').filter(function(t){ return t.length >= 4 && !/[\u0900-\u097F]/.test(t); });
+  let cand = null;
+  for(let i=0;i<MENU.length;i++){
+    const it = MENU[i];
+    for(let j=0;j<it.aliases.length;j++){
+      const al = it.aliases[j];
+      if(/[\u0900-\u097F]/.test(al) || al.indexOf(' ') !== -1) continue;
+      for(let k=0;k<toks.length;k++){
+        if(toks[k] !== al && editDist(toks[k], al) === 1 && cand === null) cand = it;
+      }
+    }
+  }
+  return cand;
+}
+function matchCombo(clause){
+  let best = null, bestLen = -1;
+  const alt = clause.replace(/([a-z]{3,})s\b/g, '$1');
+  for(let i=0;i<COMBOS.length;i++){
+    const c = COMBOS[i];
+    for(let j=0;j<c.aliases.length;j++){
+      const al = c.aliases[j];
+      if(al.length > bestLen && (hasWord(clause, al) || hasWord(alt, al))){ best = c; bestLen = al.length; }
+    }
+  }
+  return best;
+}
+function editDist(a,b){
+  const m=a.length,n=b.length;
+  if(Math.abs(m-n)>2) return 99;
+  let prev=new Array(n+1), cur=new Array(n+1);
+  for(let j=0;j<=n;j++) prev[j]=j;
+  for(let i=1;i<=m;i++){
+    cur[0]=i;
+    for(let j=1;j<=n;j++){
+      cur[j]=Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    }
+    const t=prev; prev=cur; cur=t;
+  }
+  return prev[n];
+}
+
+function itemName(it, lang){
+  if(lang === 'en') return it.en;
+  if(lang === 'hinglish') return it.hl;
+  return it.hi;
+}
+function stripVerbs(c){
+  let s = c;
+  for(let i=0;i<VERBS.length;i++){
+    const v = VERBS[i];
+    if(/[\u0900-\u097F]/.test(v)) s = s.split(v).join(' ');
+    else s = s.replace(new RegExp('(^|[^a-z])' + escapeRe(v) + '($|[^a-z])','g'), ' ');
+  }
+  return s.replace(/\s+/g,' ').trim();
+}
+function extractQty(c){
+  const toks = stripVerbs(c).split(' ');
+  for(let i=0;i<toks.length;i++){
+    const t = toks[i];
+    if(!t) continue;
+    if(/^\d+$/.test(t)) return +t;
+    if(Object.prototype.hasOwnProperty.call(NUM, t)) return NUM[t];
+  }
+  return null;
+}
+
+function splitClauses(raw){
+  let s = raw;
+  PROTECT.forEach(function(p){
+    s = s.replace(new RegExp('(^|\\s)' + p + '(?=\\s|$)','g'), function(m){ return m.replace(/ /g,'_'); });
+  });
+  return s.split(/\s+(?:and|aur|plus|also|phir|fir|with|ke saath|और|तथा|फिर)\s+|,|&|\+/)
+          .map(function(x){ return x.replace(/_/g,' ').trim(); })
+          .filter(Boolean);
+}
+
+function calcTotals(cart){
+  const items = [], keys = Object.keys(cart);
+  let sub = 0;
+  keys.forEach(function(id){
+    const it = unitById(id); if(!it) return;
+    const q = cart[id];
+    items.push({id:id, item:it, qty:q, line:it.price*q});
+    sub += it.price*q;
+  });
+  const gst = Math.round(sub * 0.05);
+  return {items:items, sub:sub, gst:gst, total:sub+gst, count:items.reduce(function(a,b){return a+b.qty;},0)};
+}
+function money(n){ return '₹' + Number(n).toLocaleString('en-IN'); }
+
+const HI_NUM = ['','एक','दो','तीन','चार','पाँच','छह','सात','आठ','नौ','दस'];
+const HL_NUM = ['','ek','do','teen','char','paanch','chhe','saat','aath','nau','das'];
+function qw(q, lang){
+  if(lang === 'hi')  return (q>=1 && q<=10) ? HI_NUM[q] : String(q);
+  if(lang === 'hinglish') return (q>=1 && q<=10) ? HL_NUM[q] : String(q);
+  return String(q);
+}
+
+const T = {
+  en:{
+    added:function(q,n){ return 'Added ' + q + ' \u00d7 ' + n + '.'; },
+    removed:function(q,n){ return 'Removed ' + q + ' \u00d7 ' + n + '.'; },
+    gone:function(n){ return n + ' taken off your order.'; },
+    set:function(q,n){ return n + ' updated to ' + q + '.'; },
+    cleared:function(){ return 'Cart cleared \u2014 fresh start.'; },
+    undone:function(){ return 'Undone. Back to how it was.'; },
+    noItem:function(){ return 'I didn\u2019t catch an item there. Try \u201cone masala dosa and two chai\u201d.'; },
+    noChange:function(){ return 'Nothing to undo yet.'; },
+    notInCart:function(n){ return n + ' isn\u2019t in your order.'; },
+    empty:function(){ return 'Your order is empty right now.'; },
+    total:function(v){ return 'Total ' + v + '.'; },
+    join:function(s,v){ return s + ' ' + v; },
+    readHead:function(){ return 'Here\u2019s your order:'; },
+    doneText:function(v){ return 'Order confirmed. ' + v + ' to pay. Bon app\u00e9tit!'; },
+    billText:function(v){ return 'Bill generated. ' + v + ' in total.'; }
+  },
+  hi:{
+    added:function(q,n){ return qw(q,'hi') + ' ' + n + ' जोड़ दिया।'; },
+    removed:function(q,n){ return qw(q,'hi') + ' ' + n + ' हटा दिया।'; },
+    gone:function(n){ return n + ' ऑर्डर से हटा दिया।'; },
+    set:function(q,n){ return n + ' अब ' + qw(q,'hi') + ' कर दिया।'; },
+    cleared:function(){ return 'कार्ट खाली कर दिया।'; },
+    undone:function(){ return 'पिछला बदलाव वापस कर दिया।'; },
+    noItem:function(){ return 'आइटम समझ नहीं आया। ऐसे बोलिए — “एक मसाला डोसा और दो चाय”।'; },
+    noChange:function(){ return 'अभी कुछ भी वापस करने को नहीं है।'; },
+    notInCart:function(n){ return n + ' ऑर्डर में नहीं है।'; },
+    empty:function(){ return 'अभी ऑर्डर खाली है।'; },
+    total:function(v){ return 'कुल ' + v + '।'; },
+    join:function(s,v){ return s + ' ' + v; },
+    readHead:function(){ return 'आपका ऑर्डर:'; },
+    doneText:function(v){ return 'ऑर्डर कन्फर्म। कुल ' + v + ' देना है। धन्यवाद!'; },
+    billText:function(v){ return 'बिल बन गया। कुल ' + v + '।'; }
+  },
+  hinglish:{
+    added:function(q,n){ return qw(q,'hinglish') + ' ' + n + ' add kar diya.'; },
+    removed:function(q,n){ return qw(q,'hinglish') + ' ' + n + ' hata diya.'; },
+    gone:function(n){ return n + ' order se hata diya.'; },
+    set:function(q,n){ return n + ' ab ' + qw(q,'hinglish') + ' kar diya.'; },
+    cleared:function(){ return 'Cart clear kar diya, fresh start.'; },
+    undone:function(){ return 'Undo ho gaya, pichla wala wapas.'; },
+    noItem:function(){ return 'Item samajh nahi aaya. Aise boliye \u2014 "ek masala dosa aur do chai".'; },
+    noChange:function(){ return 'Abhi undo karne ko kuch nahi hai.'; },
+    notInCart:function(n){ return n + ' order mein nahi hai.'; },
+    empty:function(){ return 'Order abhi khaali hai.'; },
+    total:function(v){ return 'Total ' + v + '.'; },
+    join:function(s,v){ return s + ' ' + v; },
+    readHead:function(){ return 'Aapka order:'; },
+    doneText:function(v){ return 'Order confirm. Total ' + v + ' dena hai. Thanks!'; },
+    billText:function(v){ return 'Bill ban gaya. Total ' + v + '.'; }
+  }
+};
+
+function readOrderText(st, lang){
+  const t = calcTotals(st.cart), L = T[lang] || T.en;
+  if(!t.items.length) return L.empty();
+  const parts = t.items.map(function(x){ return qw(x.qty, lang) + ' ' + itemName(x.item, lang); });
+  const tail = (lang === 'hi') ? '।' : '.';
+  return L.readHead() + ' ' + parts.join(', ') + tail + ' ' + L.total(money(t.total));
+}
+
+function newState(){
+  return {cart:{}, lastItem:null, undo:[], orderNo:1042, proposal:null,
+          upsellDone:false, lastCompleted:null, billed:false, declinedCombos:{}};
+}
+function snapshot(st){
+  st.billed = false;
+  st.undo.push(JSON.stringify({cart:st.cart, lastItem:st.lastItem}));
+  if(st.undo.length > 25) st.undo.shift();
+}
+
+function runUtterance(text, st, lang){
+  lang = T[lang] ? lang : 'en';
+  const spk = (lang === 'hinglish') ? 'hi' : lang;
+  const L = T[lang], S = T[spk];
+  const out = {say:'', saySpeech:'', changes:[], openBill:false, done:false, understood:null};
+  const raw = norm(text);
+  if(!raw){ out.say = L.noItem(); out.saySpeech = S.noItem(); return out; }
+
+  const clauses = splitClauses(raw);
+  const intents = clauses.map(detectIntent);
+  const globalIntent = detectIntent(raw);
+
+  if(globalIntent === 'clear'){
+    snapshot(st); st.cart = {}; st.lastItem = null;
+    out.changes.push({type:'clear'});
+    out.say = L.cleared(); out.saySpeech = S.cleared(); out.understood = 'CLEAR';
+    return out;
+  }
+  if(globalIntent === 'undo'){
+    out.understood = 'UNDO';
+    if(!st.undo.length){ out.say = L.noChange(); out.saySpeech = S.noChange(); return out; }
+    const prev = JSON.parse(st.undo.pop());
+    st.cart = prev.cart; st.lastItem = prev.lastItem;
+    out.changes.push({type:'restore'});
+    out.say = L.undone(); out.saySpeech = S.undone();
+    return out;
+  }
+  if(globalIntent === 'bill' || globalIntent === 'read'){
+    out.say = readOrderText(st, lang);
+    out.saySpeech = readOrderText(st, spk);
+    out.understood = globalIntent.toUpperCase();
+    if(globalIntent === 'bill' && Object.keys(st.cart).length) out.openBill = true;
+    return out;
+  }
+  if(globalIntent === 'done'){
+    out.understood = 'DONE';
+    if(!Object.keys(st.cart).length){ out.say = L.empty(); out.saySpeech = S.empty(); return out; }
+    const v = money(calcTotals(st.cart).total);
+    out.done = true; out.openBill = true;
+    out.say = L.doneText(v); out.saySpeech = S.doneText(v);
+    return out;
+  }
+
+  const fallback = clauses.length === 2 ? (intents[1] || 'add') : 'add';
+  const said = [], saidS = [];
+  let touched = false;
+
+  for(let i=0;i<clauses.length;i++){
+    const c = clauses[i];
+    const intent = intents[i] || fallback;
+    if(intent === 'clear' || intent === 'read' || intent === 'bill' || intent === 'done' || intent === 'undo') continue;
+
+    const comboHit = matchCombo(c);
+    let item = comboHit || matchItem(c);
+    const qty = extractQty(c);
+    if(!item && (intent === 'set' || intent === 'inc') && st.lastItem) item = ITEM_BY_ID[st.lastItem];
+    if(!item) continue;
+
+    if(intent === 'add' || intent === 'inc'){
+      const q = qty || 1;
+      if(intent === 'inc' && !st.cart[item.id] && Object.keys(st.cart).length && st.lastItem){
+        out.changes.push({type:'miss', id:item.id});
+        said.push(L.notInCart(itemName(item, lang)));
+        saidS.push(S.notInCart(itemName(item, spk)));
+        continue;
+      }
+      snapshot(st);
+      st.cart[item.id] = (st.cart[item.id] || 0) + q;
+      st.lastItem = item.id; touched = true;
+      out.changes.push({type:'add', id:item.id, qty:q});
+      said.push(L.added(q, itemName(item, lang)));
+      saidS.push(S.added(q, itemName(item, spk)));
+    }
+    else if(intent === 'remove'){
+      if(!st.cart[item.id]){
+        out.changes.push({type:'miss', id:item.id});
+        said.push(L.notInCart(itemName(item, lang)));
+        saidS.push(S.notInCart(itemName(item, spk)));
+        continue;
+      }
+      const q = qty || 1;
+      snapshot(st);
+      if(st.cart[item.id] <= q){
+        delete st.cart[item.id];
+        out.changes.push({type:'remove', id:item.id, qty:q});
+        said.push(L.gone(itemName(item, lang)));
+        saidS.push(S.gone(itemName(item, spk)));
+      } else {
+        st.cart[item.id] -= q;
+        out.changes.push({type:'remove', id:item.id, qty:q});
+        said.push(L.removed(q, itemName(item, lang)));
+        saidS.push(S.removed(q, itemName(item, spk)));
+      }
+      const rest = Object.keys(st.cart);
+      st.lastItem = rest.length ? rest[rest.length-1] : null;
+      touched = true;
+    }
+    else if(intent === 'set'){
+      if(qty === null){
+        said.push(L.noItem()); saidS.push(S.noItem());
+        continue;
+      }
+      snapshot(st);
+      if(qty <= 0){
+        delete st.cart[item.id];
+        said.push(L.gone(itemName(item, lang)));
+        saidS.push(S.gone(itemName(item, spk)));
+      } else {
+        st.cart[item.id] = qty;
+        said.push(L.set(qty, itemName(item, lang)));
+        saidS.push(S.set(qty, itemName(item, spk)));
+      }
+      st.lastItem = item.id; touched = true;
+      out.changes.push({type:'set', id:item.id, qty:qty});
+    }
+  }
+
+  if(!touched && !said.length){
+    out.say = L.noItem(); out.saySpeech = S.noItem(); out.understood = 'UNKNOWN';
+    return out;
+  }
+  if(!touched){
+    out.say = said.join(' '); out.saySpeech = saidS.join(' ');
+    out.understood = 'NO-OP';
+    return out;
+  }
+  const v = money(calcTotals(st.cart).total);
+  out.say = L.join(said.join(' '), L.total(v));
+  out.saySpeech = S.join(saidS.join(' '), S.total(v));
+  out.understood = 'EDIT';
+  return out;
+}
+
+/* ============================================================
+   Agent layer — conversation, recommendations, follow-ups
+   ============================================================ */
+
+const DESCS = {
+  masala_dosa:{en:'a crisp dosa with spiced potato filling, served with sambar and coconut chutney',hi:'कुरकुरा डोसा, मसालेदार आलू भरकर, सांभर और नारियल चटनी के साथ'},
+  plain_dosa:{en:'a simple crisp dosa with sambar and chutney',hi:'सादा कुरकुरा डोसा, सांभर और चटनी के साथ'},
+  idli:{en:'two soft steamed rice cakes served with sambar',hi:'दो मुलायम भाप में पकी इडली, सांभर के साथ'},
+  vada:{en:'a crisp urad dal fritter, served hot with chutney',hi:'गरम कुरकुरा मेदू वड़ा, चटनी के साथ'},
+  poha:{en:'flattened rice with peanuts, lemon and coriander',hi:'पोहा, मूंगफली, नींबू और धनिया के साथ'},
+  samosa:{en:'a fried pastry stuffed with spiced potato and peas',hi:'आलू-मटर की भराई वाला गरम समोसा'},
+  sandwich:{en:'a grilled veg sandwich with chutney and cheese',hi:'ग्रिल्ड वेज सैंडविच, चटनी और चीज़ के साथ'},
+  burger:{en:'a veg patty burger with lettuce and mayo',hi:'वेज पैटी बर्गर, सलाद और मेयो के साथ'},
+  fries:{en:'crispy salted fries',hi:'कुरकुरे नमकीन फ्राइज़'},
+  pavbhaji:{en:'spicy mashed vegetable bhaji with buttered pav',hi:'मसालेदार भाजी, मक्खन लगे पाव के साथ'},
+  biryani:{en:'fragrant basmati rice with vegetables and raita',hi:'खुशबूदार वेज बिरयानी, रायते के साथ'},
+  paneer:{en:'chargrilled paneer cubes tossed in spices',hi:'मसालों में चारग्रिल्ड पनीर के टुकड़े'},
+  chai:{en:'hot masala chai brewed with ginger and cardamom',hi:'अदरक-इलायची वाली गरम मसाला चाय'},
+  coffee:{en:'strong South Indian filter coffee with milk',hi:'दूध वाली साउथ इंडियन फिल्टर कॉफ़ी'},
+  cold_coffee:{en:'chilled coffee blended with milk and ice',hi:'ठंडी कॉफ़ी, दूध और बर्फ के साथ'},
+  lassi:{en:'sweet chilled curd lassi',hi:'मीठी ठंडी दही की लस्सी'},
+  gulab:{en:'two warm gulab jamun in sugar syrup',hi:'चाशनी में दो गरम गुलाब जामुन'},
+  water:{en:'a chilled one litre water bottle',hi:'ठंडा एक लीटर पानी की बोतल'}
+};
+const POPULAR = ['masala_dosa','chai','samosa','coffee','pavbhaji','idli'];
+const DRINKS = ['chai','coffee','cold_coffee','lassi','water','coke'];
+
+function itemDesc(it, lang){
+  if(it.den) return lang === 'hi' ? it.dhi : it.den;
+  const d = DESCS[it.id]; if(!d) return '';
+  return lang === 'hi' ? d.hi : d.en;
+}
+function isDrink(id){ return DRINKS.indexOf(id) !== -1; }
+
+const CONV = {
+  yes: ['yes','yeah','yep','haan','ha','sure','ok','okay','theek hai','thik hai','add karo','le lo','haan ji','हाँ','हां','ठीक है','जी हाँ','ले लो','कर दो'],
+  no:  ['no','nope','nahi','nahin','not now','rehne do','मत','नहीं','रहने दो','अभी नहीं','ना'],
+  who: ['who are you','your name','tum kaun','aap kaun','तुम कौन','आप कौन','तुम्हारा नाम'],
+  help:['help','what can you do','how do i use','kaise use karu','kaise chalate','मदद','क्या कर सकते','कैसे इस्तेमाल'],
+  lastOrder:['repeat last','same as last','last order','phir se wahi','pichla order','pichla wala','पिछला ऑर्डर','वही फिर से','पिछला वाला'],
+  menu:['menu','what do you have','what all do you have','options','kya kya hai','kya milega','menu batao','menu dikhao','khane mein kya','क्या क्या है','क्या मिलेगा','मेन्यू','खाने में क्या','मेन्यू दिखाओ'],
+  recommend:['recommend','what is good','whats good','what is best','suggest','suggestion','popular','famous','kya acha','kya achha','kya best','kya badhiya','क्या अच्छा','सुझाव','क्या बढ़िया','क्या मशहूर'],
+  itemQ:['me kya','mein kya','what is in','whats in','ingredients','spicy','taste','kaisa hai','kaise banta','veg hai','में क्या','कैसा है','कैसे बनता','तीखा','सामग्री','शुद्ध'],
+  thanks:['thank','thanks','thank you','shukriya','dhanyavad','dhanyawad','धन्यवाद','शुक्रिया'],
+  bye:['bye','goodbye','see you','chalo bye','बाय','अलविदा','फिर मिलेंगे'],
+  greet:['hi','hello','hey','namaste','namaskar','good morning','good evening','salaam','हाय','हैलो','नमस्ते','नमस्कार']
+};
+
+function anyWord(hay, list){
+  for(let i=0;i<list.length;i++){ if(hasWord(hay, list[i])) return true; }
+  return false;
+}
+
+/* --- conversation lines --- */
+Object.assign(T.en, {
+  greet:function(){ return 'Hi! I\u2019m BolOrder. What would you like today? You can say \u201cone masala dosa and two chai\u201d.'; },
+  thanks:function(){ return 'Anytime! Your order shows up on the counter screen.'; },
+  bye:function(){ return 'Thanks for coming. Your order will be ready in about six minutes.'; },
+  who:function(){ return 'I\u2019m BolOrder \u2014 a voice ordering assistant for this canteen.'; },
+  help:function(){ return 'Just talk to me normally. Add items, remove them, change quantities, or ask for the bill.'; },
+  menuList:function(s){ return 'We have ' + s + '. What shall I add?'; },
+  recommend:function(n,p){ return 'Today\u2019s favourite is ' + n + ' at ' + p + '. Shall I add one?'; },
+  itemInfo:function(n,d,p){ return n + ' \u2014 ' + d + '. That\u2019s ' + p + '.'; },
+  yesAdd:function(n){ return 'Added ' + n + '.'; },
+  declined:function(){ return 'No problem.'; },
+  lastOrderNone:function(){ return 'I don\u2019t have a previous order to repeat yet.'; },
+  lastOrder:function(v){ return 'Brought back your last order. ' + v + '.'; },
+  upsell:function(){ return 'Would you like a chai with that?'; },
+  hfOn:function(){ return 'Hands-free is on. I\u2019m listening.'; },
+  comboAsk:function(n,c,p,t){ return 'By the way, the ' + n + ' gives you ' + c + ' for ' + p + ' \u2014 ' + t + '. Shall I switch?'; },
+  comboSave:function(v){ return v + ' less than buying them separately'; },
+  comboSavePlus:function(v,more){ return v + ' less, and you also get ' + more; },
+  comboExtra:function(v,more){ return v + ' more, and you also get ' + more; },
+  comboAdded:function(n,v){ return 'Switched to the ' + n + '. Total ' + v + '.'; }
+});
+Object.assign(T.hi, {
+  greet:function(){ return 'नमस्ते! मैं बोलऑर्डर हूँ। बताइए क्या लेंगे? आप कह सकते हैं — “एक मसाला डोसा और दो चाय”।'; },
+  thanks:function(){ return 'कोई बात नहीं! आपका ऑर्डर काउंटर स्क्रीन पर दिख जाएगा।'; },
+  bye:function(){ return 'धन्यवाद! आपका ऑर्डर लगभग छह मिनट में तैयार होगा।'; },
+  who:function(){ return 'मैं बोलऑर्डर हूँ — इस कैंटीन का वॉइस ऑर्डरिंग सहायक।'; },
+  help:function(){ return 'आम आदमी की तरह बात कीजिए। आइटम जोड़िए, हटाइए, मात्रा बदलिए, या बिल माँगिए।'; },
+  menuList:function(s){ return 'हमारे पास ' + s + ' हैं। क्या जोड़ूँ?'; },
+  recommend:function(n,p){ return 'आज सबसे पसंदीदा है ' + n + ', ' + p + '। एक जोड़ दूँ?'; },
+  itemInfo:function(n,d,p){ return n + ' — ' + d + '। यह ' + p + ' का है।'; },
+  yesAdd:function(n){ return n + ' जोड़ दिया।'; },
+  declined:function(){ return 'ठीक है।'; },
+  lastOrderNone:function(){ return 'अभी दोहराने के लिए कोई पिछला ऑर्डर नहीं है।'; },
+  lastOrder:function(v){ return 'आपका पिछला ऑर्डर वापस ले आया। ' + v + '।'; },
+  upsell:function(){ return 'इसके साथ एक चाय लेंगे?'; },
+  hfOn:function(){ return 'हैंड्स-फ्री चालू है। मैं सुन रहा हूँ।'; },
+  comboAsk:function(n,c,p,t){ return 'वैसे, ' + n + ' में ' + c + ' मिलते हैं, सिर्फ़ ' + p + ' में — ' + t + '। बदल दूँ?'; },
+  comboSave:function(v){ return 'अलग-अलग लेने से ' + v + ' कम'; },
+  comboSavePlus:function(v,more){ return v + ' कम, और ' + more + ' भी मिलेंगे'; },
+  comboExtra:function(v,more){ return v + ' ज़्यादा, और ' + more + ' भी मिलेंगे'; },
+  comboAdded:function(n,v){ return n + ' में बदल दिया। कुल ' + v + '।'; }
+});
+Object.assign(T.hinglish, {
+  greet:function(){ return 'Namaste! Main BolOrder hoon. Bataiye kya lenge? Aap keh sakte hain \u2014 "ek masala dosa aur do chai".'; },
+  thanks:function(){ return 'Koi baat nahi! Aapka order counter screen pe dikh jayega.'; },
+  bye:function(){ return 'Thanks! Aapka order lagbhag chhe minute mein ready hoga.'; },
+  who:function(){ return 'Main BolOrder hoon \u2014 is canteen ka voice ordering assistant.'; },
+  help:function(){ return 'Aap normal insaan ki tarah baat kijiye. Item add, remove, quantity change, ya bill \u2014 sab bol sakte hain.'; },
+  menuList:function(s){ return 'Hamare paas ' + s + ' hain. Kya add karun?'; },
+  recommend:function(n,p){ return 'Aaj sabse pasandida hai ' + n + ', ' + p + '. Ek add kar dun?'; },
+  itemInfo:function(n,d,p){ return n + ' \u2014 ' + d + '. Yeh ' + p + ' ka hai.'; },
+  yesAdd:function(n){ return n + ' add kar diya.'; },
+  declined:function(){ return 'Theek hai.'; },
+  lastOrderNone:function(){ return 'Abhi repeat karne ke liye koi pichla order nahi hai.'; },
+  lastOrder:function(v){ return 'Aapka pichla order wapas le aaya. ' + v + '.'; },
+  upsell:function(){ return 'Iske saath ek chai lenge?'; },
+  hfOn:function(){ return 'Hands-free on hai. Main sun raha hoon.'; },
+  comboAsk:function(n,c,p,t){ return 'Waise, ' + n + ' mein ' + c + ' milte hain, sirf ' + p + ' mein — ' + t + '. Switch kar dun?'; },
+  comboSave:function(v){ return 'alag lene se ' + v + ' kam'; },
+  comboSavePlus:function(v,more){ return v + ' kam, aur ' + more + ' bhi milenge'; },
+  comboExtra:function(v,more){ return v + ' zyada, aur ' + more + ' bhi milenge'; },
+  comboAdded:function(n,v){ return n + ' mein switch kar diya. Total ' + v + '.'; }
+});
+
+/* --- combos: find one worth offering, and describe it --- */
+function comboOffer(st, lang){
+  for(let i=0;i<COMBOS.length;i++){
+    const c = COMBOS[i];
+    if(st.cart[c.id]) continue;                                  /* already on the tray */
+    if(st.declinedCombos && st.declinedCombos[c.id]) continue;    /* they said no already */
+    let ok = true;
+    for(const k in c.need){ if((st.cart[k] || 0) < c.need[k]){ ok = false; break; } }
+    if(ok) return c;
+  }
+  return null;
+}
+function comboContents(c, lang){
+  return c.contains.map(function(x){
+    return x.qty + ' ' + itemName(unitById(x.id), lang);
+  }).join(', ');
+}
+function comboText(c, st, lang){
+  const L = T[lang];
+  const contents = comboContents(c, lang);
+  let consumed = 0;
+  const missing = [];
+  c.contains.forEach(function(x){
+    const u = unitById(x.id);
+    const have = Math.min(st.cart[x.id] || 0, x.qty);
+    consumed += have * u.price;
+    if(have < x.qty) missing.push((x.qty - have) + ' ' + itemName(u, lang));
+  });
+  const delta = c.price - consumed;
+  const join = lang === 'en' ? ' and ' : (lang === 'hi' ? ' और ' : ' aur ');
+  let tail;
+  if(!missing.length) tail = L.comboSave(money(Math.max(0, -delta)));
+  else if(delta <= 0) tail = L.comboSavePlus(money(-delta), missing.join(join));
+  else tail = L.comboExtra(money(delta), missing.join(join));
+  return L.comboAsk(itemName(c, lang), contents, money(c.price), tail);
+}
+function applyCombo(st, c){
+  snapshot(st);
+  c.contains.forEach(function(x){
+    const have = st.cart[x.id] || 0;
+    const take = Math.min(have, x.qty);
+    if(take > 0){
+      if(have - take <= 0) delete st.cart[x.id];
+      else st.cart[x.id] = have - take;
+    }
+  });
+  st.cart[c.id] = (st.cart[c.id] || 0) + 1;
+  st.lastItem = c.id;
+}
+
+/* --- one conversational turn --- */
+function agentTurn(text, st, lang){
+  lang = T[lang] ? lang : 'en';
+  const spk = (lang === 'hinglish') ? 'hi' : lang;
+  const L = T[lang], S = T[spk];
+  const raw = norm(text);
+  const out = {say:'', saySpeech:'', changes:[], openBill:false, done:false, understood:null, kind:'order'};
+  if(!raw){ out.say = L.noItem(); out.saySpeech = S.noItem(); return out; }
+
+  /* 1. answering the agent's own question */
+  const prop = st.proposal;
+  st.proposal = null;
+  if(prop && anyWord(raw, CONV.yes)){
+    if(prop.kind === 'combo'){
+      const cb = COMBO_BY_ID[prop.id];
+      if(cb){
+        applyCombo(st, cb);
+        const v = money(calcTotals(st.cart).total);
+        out.changes = [{type:'add', id:cb.id, qty:1}];
+        out.say = L.comboAdded(itemName(cb, lang), v);
+        out.saySpeech = S.comboAdded(itemName(cb, spk), v);
+        out.understood = 'COMBO-YES'; out.kind = 'talk';
+        return out;
+      }
+    }
+    const it = unitById(prop.id);
+    if(it){
+      const q = extractQty(raw) || prop.qty || 1;
+      snapshot(st);
+      st.cart[it.id] = (st.cart[it.id] || 0) + q;
+      st.lastItem = it.id;
+      const v = money(calcTotals(st.cart).total);
+      out.changes = [{type:'add', id:it.id, qty:q}];
+      out.say = L.yesAdd(itemName(it, lang)) + ' ' + L.total(v);
+      out.saySpeech = S.yesAdd(itemName(it, spk)) + ' ' + S.total(v);
+      out.understood = 'PROPOSAL-YES'; out.kind = 'talk';
+      return out;
+    }
+  }
+  if(prop && anyWord(raw, CONV.no)){
+    if(prop.kind === 'combo'){ if(!st.declinedCombos) st.declinedCombos = {}; st.declinedCombos[prop.id] = true; }
+    out.say = L.declined(); out.saySpeech = S.declined();
+    out.understood = 'PROPOSAL-NO'; out.kind = 'talk';
+    return out;
+  }
+
+  /* 2. small talk and questions about the canteen */
+  const hasItem = !!matchItem(raw);
+  if(!hasItem && anyWord(raw, CONV.who)){
+    out.say = L.who(); out.saySpeech = S.who(); out.understood = 'WHO'; out.kind = 'talk'; return out;
+  }
+  if(!hasItem && anyWord(raw, CONV.help)){
+    out.say = L.help(); out.saySpeech = S.help(); out.understood = 'HELP'; out.kind = 'talk'; return out;
+  }
+  if(anyWord(raw, CONV.lastOrder)){
+    if(st.lastCompleted && Object.keys(st.lastCompleted).length){
+      snapshot(st);
+      st.cart = JSON.parse(JSON.stringify(st.lastCompleted));
+      const v = money(calcTotals(st.cart).total);
+      out.changes = [{type:'restore'}];
+      out.say = L.lastOrder(v); out.saySpeech = S.lastOrder(v);
+      out.understood = 'REPEAT'; out.kind = 'talk'; return out;
+    }
+    out.say = L.lastOrderNone(); out.saySpeech = S.lastOrderNone();
+    out.understood = 'REPEAT-NONE'; out.kind = 'talk'; return out;
+  }
+  if(anyWord(raw, CONV.menu)){
+    const picks = POPULAR.slice(0,4).map(function(id){
+      const it = ITEM_BY_ID[id];
+      return itemName(it, lang) + ' ' + money(it.price);
+    });
+    const picksS = POPULAR.slice(0,4).map(function(id){
+      const it = ITEM_BY_ID[id];
+      return itemName(it, spk) + ' ' + money(it.price);
+    });
+    out.say = L.menuList(picks.join(', ')); out.saySpeech = S.menuList(picksS.join(', '));
+    out.understood = 'MENU'; out.kind = 'talk'; return out;
+  }
+  if(anyWord(raw, CONV.recommend)){
+    let pick = POPULAR[0];
+    for(let pi=0; pi<POPULAR.length; pi++){ if(!st.cart[POPULAR[pi]]){ pick = POPULAR[pi]; break; } }
+    const it = ITEM_BY_ID[pick];
+    st.proposal = {kind:'item', id: it.id, qty: 1};
+    out.say = L.recommend(itemName(it, lang), money(it.price));
+    out.saySpeech = S.recommend(itemName(it, spk), money(it.price));
+    out.understood = 'RECOMMEND'; out.kind = 'talk'; return out;
+  }
+  if(anyWord(raw, CONV.itemQ)){
+    const it = matchItem(raw);
+    if(it){
+      out.say = L.itemInfo(itemName(it, lang), itemDesc(it, lang), money(it.price));
+      out.saySpeech = S.itemInfo(itemName(it, spk), itemDesc(it, spk), money(it.price));
+      out.understood = 'ITEM-INFO'; out.kind = 'talk'; return out;
+    }
+  }
+  if(!hasItem && anyWord(raw, CONV.thanks)){
+    out.say = L.thanks(); out.saySpeech = S.thanks(); out.understood = 'THANKS'; out.kind = 'talk'; return out;
+  }
+  if(!hasItem && anyWord(raw, CONV.bye)){
+    out.say = L.bye(); out.saySpeech = S.bye(); out.understood = 'BYE'; out.kind = 'talk'; return out;
+  }
+  if(!hasItem && anyWord(raw, CONV.greet)){
+    out.say = L.greet(); out.saySpeech = S.greet(); out.understood = 'GREET'; out.kind = 'talk'; return out;
+  }
+
+  /* 3. otherwise it is an ordering command */
+  const res = runUtterance(text, st, lang);
+
+  /* did that order just unlock a combo? that beats a plain upsell */
+  if(res.understood === 'EDIT'){
+    const cb = comboOffer(st, lang);
+    if(cb){
+      st.proposal = {kind:'combo', id:cb.id};
+      res.combo = cb.id;
+      res.say += ' ' + comboText(cb, st, lang);
+      res.saySpeech += ' ' + comboText(cb, st, spk);
+    } else if(!st.upsellDone){
+      const anyCombo = Object.keys(st.cart).some(function(id){ return !!COMBO_BY_ID[id]; });
+      if(anyCombo) return res;
+      const food = Object.keys(st.cart).some(function(id){ return !isDrink(id); });
+      const hasDrink = Object.keys(st.cart).some(function(id){ return isDrink(id); });
+      const addedFood = res.changes.some(function(c){ return c.type === 'add' && !isDrink(c.id); });
+      if(food && !hasDrink && addedFood){
+        st.upsellDone = true;
+        st.proposal = {kind:'item', id:'chai', qty:1};
+        res.say += ' ' + L.upsell();
+        res.saySpeech += ' ' + S.upsell();
+      }
+    }
+  }
+  if(res.openBill || res.done){
+    st.lastCompleted = JSON.parse(JSON.stringify(st.cart));
+  }
+  return res;
+}
+
+/* ---------- which language did the customer just speak? ---------- */
+const HI_T1 = ['chahiye','mujhe','karo','kardo','karde','batao','bataiye','haan','nahi','nahin',
+  'kya','kyu','hai','hain','aur','do','teen','paanch','chhe','saat','aath','nau','dedo','hata',
+  'hatao','theek','thik','zyada','accha','achha','mera','meri','hamara','lena','dena','jodo',
+  'dalo','wala','kuch','paani','bhai','yaar','kaise','kaisa','kitna','kitne','mein','abhi','phir',
+  'banao','bana','lagao','mangta','raha','gaya','diya','dijiye','kijiye','sunao','bolo','boliye',
+  'chalo','hua','hoga','lena','dena','jaldi','thoda','bahut','pasand','swad','khaana','khana'];
+const HI_T2 = ['ek','kar','ke','ka','ki','ko','se','lo','le','bas','sab','das','char','sat','to'];
+const EN_MK = ['the','and','you','your','have','want','give','what','which','please','my','with',
+  'for','is','are','this','that','it','can','could','would','me','i','to','of','in','on','a','an','be'];
+
+function detectLang(t){
+  const raw = String(t || '');
+  if(/[\u0900-\u097F]/.test(raw)) return 'hi';
+  const s = ' ' + raw.toLowerCase().replace(/[^a-z0-9\s]/g, ' ') + ' ';
+  let score = 0;
+  for(let i=0;i<HI_T1.length;i++){ if(hasWord(s, HI_T1[i])) score += 3; }
+  for(let j=0;j<HI_T2.length;j++){ if(hasWord(s, HI_T2[j])) score += 1; }
+  let en = 0;
+  for(let k=0;k<EN_MK.length;k++){ if(hasWord(s, EN_MK[k])) en++; }
+  score -= Math.min(en, 3);
+  return score >= 2 ? 'hinglish' : 'en';
+}
+
+function toSpeech(s, lang){
+  const word = lang === 'hi' ? 'रुपये' : (lang === 'hinglish' ? 'rupaye' : 'rupees');
+  return String(s).replace(/₹\s?([\d,]+)/g, '$1 ' + word).replace(/×/g, '');
+}
+/*===CORE_END===*/
+
+/* ============================================================
+   UI layer — agent conversation, voice loop, cart, bill
+   ============================================================ */
+(function(){
+  if (typeof document === 'undefined') return;
+
+  /* if anything throws, say so on the page instead of showing a blank shell */
+  window.onerror = function(msg, src, line){
+    var f = document.getElementById('fatal');
+    if(f){
+      f.style.display = 'block';
+      f.textContent = 'BolOrder hit an error: ' + msg + ' (line ' + line + '). Reload the page, or tell Tisha this message.';
+    }
+    return false;
+  };
+
+  var st = newState();
+  var lang = 'en';
+  var lastFlash = [];
+  var lastRendered = {};
+  var greeted = false;
+  var handsFree = false;
+  var autoLang = true;
+  var speaking = false;
+  var lastActivity = Date.now();
+
+  var el = {
+    stage: document.getElementById('stage'),
+    micBtn: document.getElementById('micBtn'),
+    hint: document.getElementById('hintLine'),
+    thread: document.getElementById('thread'),
+    youSaid: document.getElementById('youSaid'),
+    status: document.getElementById('status'),
+    chips: document.getElementById('chips'),
+    menu: document.getElementById('menu'),
+    menuCount: document.getElementById('menuCount'),
+    orderBody: document.getElementById('orderBody'),
+    cartCount: document.getElementById('cartCount'),
+    totals: document.getElementById('totals'),
+    billBtn: document.getElementById('billBtn'),
+    clearBtn: document.getElementById('clearBtn'),
+    undoBtn: document.getElementById('undoBtn'),
+    modal: document.getElementById('modal'),
+    receipt: document.getElementById('receipt'),
+    typeForm: document.getElementById('typeForm'),
+    typeInput: document.getElementById('typeInput'),
+    langs: document.getElementById('langs'),
+    handsFree: document.getElementById('handsFree'),
+    footnote: document.getElementById('footnote'),
+    demoBtn: document.getElementById('demoBtn'),
+    kitchen: document.getElementById('kitchen'),
+    kToken: document.getElementById('kToken'),
+    kSteps: document.getElementById('kSteps'),
+    kEta: document.getElementById('kEta'),
+    today: document.getElementById('today'),
+    voiceInfo: document.getElementById('voiceInfo'),
+    comboStrip: document.getElementById('comboStrip')
+  };
+
+  var DEMO = {
+    en: [
+      'Hey BolOrder, I want to order one masala dosa',
+      'Haan, ek chai',
+      'What is good today?',
+      'Haan, do add karo',
+      'Actually make the samosa three',
+      'Add two burgers',
+      'Yes, switch to the combo',
+      'Remove the masala dosa',
+      'What is my order?',
+      'That is it, generate the bill'
+    ],
+    hi: [
+      'हे बोलऑर्डर, मुझे एक मसाला डोसा चाहिए',
+      'हाँ, एक चाय',
+      'आज क्या अच्छा है?',
+      'हाँ, दो जोड़ दो',
+      'समोसा तीन कर दो',
+      'दो बर्गर जोड़ दो',
+      'हाँ, कॉम्बो कर दो',
+      'मसाला डोसा हटा दो',
+      'मेरा ऑर्डर बताओ',
+      'बस, बिल बनाओ'
+    ],
+    hinglish: [
+      'Hey BolOrder, mujhe ek masala dosa chahiye',
+      'Haan, ek chai',
+      'Aaj kya achha hai?',
+      'Haan, do add karo',
+      'Samosa teen kar do',
+      'Do burger add karo',
+      'Haan, combo kar do',
+      'Masala dosa hata do',
+      'Mera order batao',
+      'Bas, bill banao'
+    ]
+  };
+  var demoRunning = false, demoStop = false, demoTimers = [];
+  var ordersToday = 12, revenueToday = 1465;
+
+  var CHIPS = {
+    en: ['One masala dosa and two chai', 'What do you have?', 'What is good today?', 'Make the chai three', 'Generate the bill'],
+    hi: ['एक मसाला डोसा और दो चाय', 'मेन्यू में क्या है?', 'क्या अच्छा है?', 'चाय तीन कर दो', 'बिल बनाओ'],
+    hinglish: ['Ek masala dosa aur do chai', 'Menu mein kya hai?', 'Kya achha hai?', 'Chai teen kar do', 'Bill banao']
+  };
+  var HINTS = {
+    en: 'Tap the mic, or say \u201cHey BolOrder\u201d',
+    hi: 'माइक दबाइए, या कहिए “हे बोलऑर्डर”',
+    hinglish: 'Mic dabaiye, ya kahiye "Hey BolOrder"'
+  };
+  var PLACEHOLDER = {
+    en: 'Or type your order — “one masala dosa and two chai”',
+    hi: 'या लिखिए — “एक मसाला डोसा और दो चाय”',
+    hinglish: 'Ya type kijiye — "ek masala dosa aur do chai"'
+  };
+  function spkLang(){ return lang === 'hinglish' ? 'hi' : lang; }
+
+  /* ---------- transcript ---------- */
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function fmt(s){
+    return escapeHtml(s).replace(/₹([\d,]+)/g, '<b>₹$1</b>');
+  }
+  function addBubble(who, text){
+    if(!text) return;
+    var d = document.createElement('div');
+    d.className = 'bubble ' + who;
+    d.innerHTML = '<span class="who">' + (who === 'you' ? 'You' : 'BolOrder') + '</span>' + fmt(text);
+    el.thread.appendChild(d);
+    el.thread.scrollTop = el.thread.scrollHeight;
+  }
+  function setStatus(kind, label){
+    el.status.className = 'status ' + kind;
+    el.status.innerHTML = '<i></i>' + label;
+  }
+
+  /* ---------- voice out ---------- */
+  var voiceCache = [];
+  var speakToken = 0;
+  /* female voice names across Chrome, Edge, Windows, macOS, iOS and Android */
+  var FEMALE_HINTS = [
+    'female','woman','swara','heera','neerja','kalpana','lekha','veena','priya','ananya',
+    'ishita','kavya','shruti','samantha','sonia','karen','moira','tessa','fiona','zira',
+    'aria','jenny','susan','hazel','catherine','linda','heather','victoria','serena',
+    'google हिन्दी','google hindi','स्वरा','हीरा','लेखा','कल्पना','siri','ava','allison','nicky'
+  ];
+  var MALE_HINTS = [
+    'male','man','rishi','ravi','prabhat','madhur','hemant','arvind','krishna','daniel',
+    'alex','fred','david','mark','george','james','oliver','thomas','rahul','aakash','kunal'
+  ];
+  var loadingVoices = false;
+  function refreshVoices(){
+    try{ voiceCache = window.speechSynthesis.getVoices() || []; }
+    catch(e){ voiceCache = []; }
+    return voiceCache;
+  }
+  function loadVoices(){
+    if(loadingVoices) return;            /* re-entrancy guard */
+    loadingVoices = true;
+    refreshVoices();
+    loadingVoices = false;
+    updateVoiceInfo();
+  }
+  if(window.speechSynthesis){
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }
+  function voiceScore(v, want){
+    var n = (v.name || '').toLowerCase(), l = (v.lang || '').toLowerCase();
+    var fem = false, male = false;
+    for(var i=0;i<FEMALE_HINTS.length;i++){ if(n.indexOf(FEMALE_HINTS[i]) !== -1){ fem = true; break; } }
+    if(!fem) for(var j=0;j<MALE_HINTS.length;j++){ if(n.indexOf(MALE_HINTS[j]) !== -1){ male = true; break; } }
+
+    /* how human does it sound? neural voices first, then cloud voices, then legacy */
+    var q = 0;
+    if(n.indexOf('natural') !== -1 || n.indexOf('neural') !== -1) q = 12;
+    else if(n.indexOf('online') !== -1) q = 9;
+    else if(n.indexOf('google') !== -1) q = 7;
+    else if(n.indexOf('premium') !== -1 || n.indexOf('enhanced') !== -1) q = 6;
+
+    var langScore = (l === want) ? 2 : (l.indexOf(want.slice(0, 2)) === 0 ? 1 : 0);
+    return q + (fem ? 4 : (male ? 0 : 2)) + langScore * 6;
+  }
+  function voiceIsFemale(v){
+    var n = (v.name || '').toLowerCase();
+    for(var i=0;i<FEMALE_HINTS.length;i++){ if(n.indexOf(FEMALE_HINTS[i]) !== -1) return true; }
+    return false;
+  }
+  function pickVoice(want){
+    /* read the list directly - calling loadVoices() here recursed forever
+       whenever the browser had no voices yet, and killed the whole app */
+    if(!voiceCache.length) refreshVoices();
+    var best = null, bestScore = -1;
+    for(var i=0;i<voiceCache.length;i++){
+      var sc = voiceScore(voiceCache[i], want);
+      if(sc > bestScore){ bestScore = sc; best = voiceCache[i]; }
+    }
+    return best;
+  }
+  /* hoisted on purpose: updateVoiceInfo runs during init, before var assignments land */
+  function langLabel(l){
+    return l === 'hi' ? '\u0939\u093f\u0902\u0926\u0940' : (l === 'hinglish' ? 'Hinglish' : 'English');
+  }
+  function updateVoiceInfo(){
+    if(!el.voiceInfo) return;
+    var want = lang === 'en' ? 'en-IN' : 'hi-IN';
+    var v = pickVoice(want);
+    var voicePart = v ? (v.name + ' \u00b7 ' + v.lang) : 'system default';
+    el.voiceInfo.textContent = 'Voice \u00b7 ' + voicePart + '   \u00b7   replying in ' +
+      langLabel(lang) + (autoLang ? ' (auto)' : '');
+  }
+
+  /* switch the language we think in and answer in, without touching the pills */
+  function setReplyLang(l){
+    lang = l;
+    el.hint.textContent = HINTS[l];
+    el.typeInput.placeholder = PLACEHOLDER[l];
+    renderChips();
+    updateVoiceInfo();
+  }
+  function splitSentences(t){
+    var out = [], cur = '';
+    for(var i=0;i<t.length;i++){
+      var ch = t.charAt(i);
+      cur += ch;
+      if(ch === '.' || ch === '!' || ch === '?' || ch === '\u0964'){
+        if(cur.trim()) out.push(cur.trim());
+        cur = '';
+      }
+    }
+    if(cur.trim()) out.push(cur.trim());
+    return out.length ? out : [String(t)];
+  }
+
+  function speak(text, done){
+    if(!text || !window.speechSynthesis){ if(done) done(); return; }
+    var token = ++speakToken;
+    var finished = false;
+    function fin(){
+      if(finished) return;
+      finished = true;
+      if(token !== speakToken) return;
+      speaking = false;
+      setStatus('ready', 'Ready');
+      if(done) done();
+    }
+    try{
+      speaking = true;
+      if(rec){ try{ rec.stop(); }catch(e){} }
+      window.speechSynthesis.cancel();
+
+      var want = lang === 'en' ? 'en-IN' : 'hi-IN';
+      var v = pickVoice(want);
+      var fem = v ? voiceIsFemale(v) : false;
+      var spoken = toSpeech(text, lang);
+      var sents = splitSentences(spoken);
+      var baseRate = (lang === 'en') ? 0.98 : 0.94;
+
+      /* cancel-then-speak needs a beat in Chrome, or the first line is dropped */
+      setTimeout(function(){
+        if(token !== speakToken) return;
+        for(var i=0;i<sents.length;i++){
+          var u = new SpeechSynthesisUtterance(sents[i]);
+          u.lang = want;
+          if(v) u.voice = v;
+          /* the human part: sentences breathe, pace drifts slightly */
+          u.rate = baseRate + (i % 2 ? 0.025 : -0.012) + (Math.random() * 0.03 - 0.015);
+          u.pitch = fem ? 1.0 : 1.06;
+          u.volume = 1.0;
+          if(i === sents.length - 1){ u.onend = fin; u.onerror = fin; }
+          window.speechSynthesis.speak(u);
+        }
+      }, 70);
+
+      setTimeout(fin, Math.max(2200, Math.min(20000, String(spoken).length * 115)));
+    }catch(e){ speaking = false; if(done) done(); }
+  }
+
+  function say(agentText, speechText, after){
+    addBubble('agent', agentText);
+    setStatus('speaking', 'Speaking');
+    speak(speechText || agentText, function(){
+      if(after) after();
+    });
+  }
+
+  /* ---------- voice in ---------- */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var rec = null, listening = false, gotResult = false;
+  var WAKE = ['hey bolorder','hi bolorder','hey bol order','bolorder','bol order','बोलऑर्डर','हे बोलऑर्डर'];
+  function hasWake(t){
+    var s = String(t).toLowerCase();
+    for(var i=0;i<WAKE.length;i++){ if(s.indexOf(WAKE[i]) !== -1) return true; }
+    return false;
+  }
+  function stripWake(t){
+    var s = ' ' + String(t).toLowerCase() + ' ';
+    for(var i=0;i<WAKE.length;i++){ s = s.split(WAKE[i]).join(' '); }
+    return s.replace(/\s+/g,' ').trim();
+  }
+
+  function setListening(on){
+    listening = on;
+    el.stage.classList.toggle('listening', on);
+    el.micBtn.classList.toggle('rec', on);
+    el.micBtn.textContent = on ? '■' : '🎙';
+    if(on){ setStatus('listening', 'Listening'); }
+    else if(!speaking){ setStatus('ready', 'Ready'); }
+  }
+
+  function startListening(){
+    if(!SR){
+      say('Voice input needs Chrome or Edge. Type your order below — everything else works the same.', null);
+      el.typeInput.focus();
+      return;
+    }
+    if(listening || speaking) return;
+    try{
+      rec = new SR();
+      rec.lang = lang === 'en' ? 'en-IN' : 'hi-IN';
+      rec.interimResults = true;
+      rec.continuous = handsFree;
+      rec.maxAlternatives = 1;
+      gotResult = false;
+      rec.onstart = function(){ setListening(true); };
+      rec.onresult = function(ev){
+        var interim = '', final = '';
+        for(var i=ev.resultIndex;i<ev.results.length;i++){
+          var r = ev.results[i];
+          if(r.isFinal) final += r[0].transcript; else interim += r[0].transcript;
+        }
+        if(interim) el.youSaid.textContent = interim;
+        if(!final) return;
+        gotResult = true;
+        el.youSaid.textContent = '';
+        var idle = (Date.now() - lastActivity) > 25000;
+        if(handsFree && idle && !hasWake(final)) return;   /* ignore canteen chatter until woken */
+        lastActivity = Date.now();
+        handle(stripWake(final) || final);
+      };
+      rec.onerror = function(ev){
+        setListening(false);
+        if(ev.error === 'not-allowed' || ev.error === 'service-not-allowed'){
+          handsFree = false;
+          el.handsFree.classList.remove('on');
+          say('Microphone permission is blocked in this browser. Allow it and tap the mic again \u2014 or hit Play demo at the top to watch the whole thing run without a mic.', null);
+        } else if(ev.error === 'no-speech'){
+          if(!handsFree) say(lang === 'en' ? 'Didn\u2019t hear anything. Tap the mic and try again.' : (lang === 'hi' ? 'कुछ सुनाई नहीं दिया, फिर से बोलिए।' : 'Kuch sunai nahi diya, phir se boliye.'), null);
+        }
+      };
+      rec.onend = function(){
+        setListening(false);
+        if(handsFree && !speaking && !gotResult){
+          setTimeout(function(){ if(handsFree && !speaking && !listening) startListening(); }, 500);
+        }
+      };
+      rec.start();
+    }catch(e){
+      setListening(false);
+      say('Could not start the microphone. You can type the order below.', null);
+    }
+  }
+
+  /* ---------- the turn pipeline ---------- */
+  function handle(text, onDone){
+    if(!text) return;
+    lastActivity = Date.now();
+    addBubble('you', text);
+    if(autoLang && !demoRunning){
+      var heard = detectLang(text);
+      if(heard !== lang) setReplyLang(heard);
+    }
+    setStatus('thinking', 'Thinking');
+    var res = agentTurn(text, st, lang);
+    lastFlash = res.changes.filter(function(c){ return c.id; }).map(function(c){ return c.id; });
+    render();
+    say(res.say, res.saySpeech, function(){
+      if(res.openBill){ openBill(true); if(onDone) onDone(); return; }
+      if(handsFree && !demoRunning) startListening();
+      if(onDone) onDone();
+    });
+  }
+
+  /* ---------- simulated speech for the demo ---------- */
+  function fakeSpeak(text, cb){
+    var words = String(text).split(' ');
+    var i = 0;
+    setStatus('listening', 'Listening');
+    (function tick(){
+      if(demoStop){ el.youSaid.textContent = ''; return; }
+      i++;
+      el.youSaid.textContent = words.slice(0, i).join(' ');
+      if(i < words.length){
+        demoTimers.push(setTimeout(tick, 80 + Math.random() * 55));
+      } else {
+        demoTimers.push(setTimeout(function(){
+          if(demoStop) return;
+          el.youSaid.textContent = '';
+          cb();
+        }, 340));
+      }
+    })();
+  }
+
+  function clearDemoTimers(){
+    for(var i=0;i<demoTimers.length;i++) clearTimeout(demoTimers[i]);
+    demoTimers = [];
+  }
+  function resetSession(){
+    clearDemoTimers();
+    st = newState();
+    lastFlash = []; lastRendered = {};
+    el.thread.innerHTML = '';
+    el.youSaid.textContent = '';
+    el.kitchen.classList.remove('show');
+    Array.prototype.forEach.call(el.kSteps.children, function(x){ x.className = 'k-step'; });
+    el.kEta.textContent = '~6 min';
+    addBubble('agent', T[lang].greet());
+    greeted = true;
+    render();
+  }
+  function stopDemo(){
+    demoStop = true; demoRunning = false;
+    speakToken++;
+    clearDemoTimers();
+    el.demoBtn.classList.remove('on');
+    el.demoBtn.innerHTML = '<i></i>Play demo';
+    el.youSaid.textContent = '';
+    try{ window.speechSynthesis.cancel(); }catch(e){}
+    speaking = false;
+    setStatus('ready', 'Ready');
+  }
+  function playDemo(){
+    if(demoRunning){ stopDemo(); return; }
+    if(handsFree){
+      handsFree = false;
+      el.handsFree.classList.remove('on');
+      try{ if(rec) rec.stop(); }catch(e){}
+    }
+    try{ window.speechSynthesis.cancel(); }catch(e){}
+    speaking = false;
+    resetSession();
+    demoRunning = true; demoStop = false;
+    el.demoBtn.classList.add('on');
+    el.demoBtn.innerHTML = '<i></i>Stop demo';
+    var script = DEMO[lang].slice();
+    var i = 0;
+    function next(){
+      if(demoStop) return;
+      if(i >= script.length){
+        demoRunning = false;
+        el.demoBtn.classList.remove('on');
+        el.demoBtn.innerHTML = '<i></i>Play demo';
+        setStatus('ready', 'Ready');
+        return;
+      }
+      var line = script[i++];
+      fakeSpeak(line, function(){
+        if(demoStop) return;
+        handle(line, function(){
+          if(demoStop) return;
+          demoTimers.push(setTimeout(next, 520));
+        });
+      });
+    }
+    demoTimers.push(setTimeout(next, 650));
+  }
+  el.demoBtn.addEventListener('click', playDemo);
+
+  /* ---------- kitchen status + counter stats ---------- */
+  function showKitchen(){
+    el.kitchen.classList.add('show');
+    el.kToken.textContent = '#' + st.orderNo;
+    var steps = el.kSteps.children;
+    for(var i=0;i<steps.length;i++){ steps[i].className = 'k-step'; }
+    steps[0].className = 'k-step on';
+    el.kEta.textContent = '~6 min';
+    setTimeout(function(){
+      steps[0].className = 'k-step done';
+      steps[1].className = 'k-step on';
+      el.kEta.textContent = '~3 min';
+    }, 3200);
+    setTimeout(function(){
+      steps[1].className = 'k-step done';
+      steps[2].className = 'k-step on';
+      el.kEta.textContent = 'Ready!';
+    }, 6800);
+  }
+  function renderToday(){
+    el.today.innerHTML = 'Counter 1 · today <b>' + ordersToday + '</b> orders · <b>' + money(revenueToday) + '</b> collected <span class="sim">simulated</span>';
+  }
+
+  /* ---------- menu ---------- */
+  function renderMenu(){
+    el.menu.innerHTML = MENU.map(function(m){
+      return '<button class="tile" data-id="' + m.id + '">' +
+        '<span class="plus">+</span>' +
+        '<span class="emoji">' + m.emoji + '</span>' +
+        '<span class="tname">' + m.en + '</span>' +
+        '<span class="thi">' + m.hi + '</span>' +
+        '<span class="price">' + money(m.price) + '</span>' +
+        '</button>';
+    }).join('');
+    el.menuCount.textContent = MENU.length + ' items';
+  }
+  function renderCombos(){
+    if(!el.comboStrip) return;
+    el.comboStrip.innerHTML = COMBOS.map(function(c){
+      var parts = c.contains.reduce(function(a,x){ return a + unitById(x.id).price * x.qty; }, 0);
+      var save = parts - c.price;
+      return '<button class="combo" data-combo="' + c.id + '">' +
+        '<span class="c-tag">Combo</span>' +
+        '<span class="c-name">' + c.emoji + ' ' + c.en + '</span>' +
+        '<span class="c-in">' + comboContents(c, 'en') + '</span>' +
+        '<span class="c-price">' + money(c.price) + ' <s>' + money(parts) + '</s>' +
+          '<em>save ' + money(save) + '</em></span>' +
+      '</button>';
+    }).join('');
+  }
+  el.comboStrip.addEventListener('click', function(e){
+    var b = e.target.closest('.combo'); if(!b) return;
+    var c = COMBO_BY_ID[b.getAttribute('data-combo')]; if(!c) return;
+    applyCombo(st, c);
+    lastFlash = [c.id];
+    render();
+    var sp = spkLang(), v = money(calcTotals(st.cart).total);
+    say(T[lang].comboAdded(itemName(c, lang), v), T[sp].comboAdded(itemName(c, sp), v));
+  });
+
+  el.menu.addEventListener('click', function(e){
+    var b = e.target.closest('.tile'); if(!b) return;
+    var id = b.getAttribute('data-id');
+    snapshot(st);
+    st.cart[id] = (st.cart[id] || 0) + 1;
+    st.lastItem = id;
+    lastFlash = [id];
+    var it = ITEM_BY_ID[id], sp = spkLang();
+    render();
+    say(T[lang].added(1, itemName(it, lang)) + ' ' + T[lang].total(money(calcTotals(st.cart).total)),
+        T[sp].added(1, itemName(it, sp)) + ' ' + T[sp].total(money(calcTotals(st.cart).total)));
+  });
+
+  /* ---------- cart ---------- */
+  function render(){
+    var t = calcTotals(st.cart);
+    el.cartCount.textContent = t.count + (t.count === 1 ? ' item' : ' items');
+    el.undoBtn.disabled = st.undo.length === 0;
+    el.billBtn.disabled = t.items.length === 0;
+
+    if(!t.items.length){
+      el.orderBody.innerHTML = '<div class="empty"><span class="big">🍽</span>Nothing here yet.<br/>Say “one masala dosa and two chai”.</div>';
+    } else {
+      el.orderBody.innerHTML = t.items.map(function(x){
+        var cls = 'row';
+        if(lastFlash.indexOf(x.id) !== -1) cls += ' flash';
+        if(!lastRendered[x.id]) cls += ' enter';
+        return '<div class="' + cls + '" data-id="' + x.id + '">' +
+          '<div class="qty"><button data-act="dec" aria-label="decrease">−</button>' +
+          '<span>' + x.qty + '</span>' +
+          '<button data-act="inc" aria-label="increase">+</button></div>' +
+          '<div class="rname">' + x.item.en + '<small>' +
+            (x.item.contains ? comboContents(x.item, 'en') : money(x.item.price) + ' each') +
+          '</small></div>' +
+          '<div class="rline">' + money(x.line) + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    el.totals.innerHTML =
+      '<div class="trow"><span>Subtotal</span><span>' + money(t.sub) + '</span></div>' +
+      '<div class="trow"><span>GST (5%)</span><span>' + money(t.gst) + '</span></div>' +
+      '<div class="trow grand"><span>Total</span><span>' + money(t.total) + '</span></div>';
+
+    lastRendered = {};
+    t.items.forEach(function(x){ lastRendered[x.id] = true; });
+    lastFlash = [];
+  }
+
+  el.orderBody.addEventListener('click', function(e){
+    var btn = e.target.closest('button'); if(!btn) return;
+    var row = e.target.closest('.row'); if(!row) return;
+    var id = row.getAttribute('data-id');
+    var act = btn.getAttribute('data-act');
+    snapshot(st);
+    if(act === 'inc'){ st.cart[id] += 1; }
+    else { st.cart[id] -= 1; if(st.cart[id] <= 0) delete st.cart[id]; }
+    st.lastItem = id;
+    lastFlash = [id];
+    render();
+  });
+
+  el.clearBtn.addEventListener('click', function(){
+    if(!Object.keys(st.cart).length) return;
+    snapshot(st); st.cart = {}; st.lastItem = null; st.proposal = null; lastFlash = [];
+    render();
+    say(T[lang].cleared(), T[spkLang()].cleared());
+  });
+  el.undoBtn.addEventListener('click', function(){
+    if(!st.undo.length) return;
+    var prev = JSON.parse(st.undo.pop());
+    st.cart = prev.cart; st.lastItem = prev.lastItem; lastFlash = [];
+    render();
+    say(T[lang].undone(), T[spkLang()].undone());
+  });
+
+  /* ---------- bill ---------- */
+  function openBill(silent){
+    var t = calcTotals(st.cart);
+    if(!t.items.length) return;
+    st.orderNo += 1;
+    st.lastCompleted = JSON.parse(JSON.stringify(st.cart));
+    var now = new Date();
+    var ts = now.toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+    var rows = t.items.map(function(x){
+      return '<div class="rline2"><span class="q">' + x.qty + '×</span>' +
+             '<span class="n">' + x.item.en +
+               (x.item.contains ? '<br/><span style="font-size:10px;color:#8b7d72">' + comboContents(x.item, 'en') + '</span>' : '') +
+             '</span>' +
+             '<span class="a">' + money(x.line) + '</span></div>';
+    }).join('');
+    el.receipt.innerHTML =
+      '<h3>BolOrder Canteen</h3>' +
+      '<div class="sub">Order #' + st.orderNo + ' &nbsp;·&nbsp; ' + ts + '<br/>Voice order · counter 1</div>' +
+      rows +
+      '<hr class="dash"/>' +
+      '<div class="rline2"><span class="n">Subtotal</span><span class="a">' + money(t.sub) + '</span></div>' +
+      '<div class="rline2"><span class="n">CGST 2.5%</span><span class="a">' + money(Math.round(t.gst/2)) + '</span></div>' +
+      '<div class="rline2"><span class="n">SGST 2.5%</span><span class="a">' + money(t.gst - Math.round(t.gst/2)) + '</span></div>' +
+      '<hr class="dash"/>' +
+      '<div class="rline2" style="font-size:15px;font-weight:800"><span class="n">Total payable</span><span class="a">' + money(t.total) + '</span></div>' +
+      '<div class="modal-actions">' +
+        '<button type="button" id="closeModal">Close</button>' +
+        '<button type="button" class="dark" id="printModal">Print bill</button>' +
+      '</div>' +
+      '<div class="thanks">Thank you! Pay at the counter or scan the QR.</div>';
+    el.modal.classList.add('open');
+    if(!st.billed){
+      st.billed = true;
+      ordersToday++;
+      revenueToday += t.total;
+      renderToday();
+      showKitchen();
+    }
+    document.getElementById('closeModal').onclick = function(){ el.modal.classList.remove('open'); };
+    document.getElementById('printModal').onclick = function(){ window.print(); };
+    if(!silent) speak(T[spkLang()].billText(money(t.total)));
+  }
+  el.billBtn.addEventListener('click', function(){ openBill(false); });
+  el.modal.addEventListener('click', function(e){ if(e.target === el.modal) el.modal.classList.remove('open'); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') el.modal.classList.remove('open'); });
+
+  /* ---------- chips ---------- */
+  function renderChips(){
+    var html = '<span class="lead">Try:</span>';
+    CHIPS[lang].forEach(function(c){
+      html += '<button class="chip" type="button">' + escapeHtml(c) + '</button>';
+    });
+    el.chips.innerHTML = html;
+  }
+  el.chips.addEventListener('click', function(e){
+    var b = e.target.closest('.chip'); if(!b) return;
+    handle(b.textContent);
+  });
+
+  el.typeForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var v = el.typeInput.value.trim();
+    if(!v) return;
+    el.typeInput.value = '';
+    handle(v);
+  });
+
+  /* ---------- language ---------- */
+  el.langs.addEventListener('click', function(e){
+    var b = e.target.closest('button[data-lang]'); if(!b) return;
+    var v = b.getAttribute('data-lang');
+    speakToken++;
+    try{ window.speechSynthesis.cancel(); }catch(err){}
+    if(listening){ try{ rec.stop(); }catch(err2){} }
+    Array.prototype.forEach.call(el.langs.querySelectorAll('button'), function(x){
+      x.classList.toggle('on', x === b);
+    });
+    if(v === 'auto'){
+      autoLang = true;
+      updateVoiceInfo();
+      return;
+    }
+    autoLang = false;
+    setReplyLang(v);
+  });
+
+  /* ---------- mic + hands-free ---------- */
+  function greetOnce(speakIt){
+    if(greeted) return false;
+    greeted = true;
+    addBubble('agent', T[lang].greet());
+    if(speakIt){
+      setStatus('speaking', 'Speaking');
+      speak(T[spkLang()].greet(), function(){ if(handsFree) startListening(); });
+    }
+    return true;
+  }
+
+  el.micBtn.addEventListener('click', function(){
+    if(listening){ try{ rec.stop(); }catch(e){} setListening(false); return; }
+    try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+    speaking = false;
+    if(greetOnce(true)) return;
+    startListening();
+  });
+
+  el.handsFree.addEventListener('click', function(){
+    handsFree = !handsFree;
+    el.handsFree.classList.toggle('on', handsFree);
+    el.hint.textContent = handsFree
+      ? (lang === 'en' ? 'Hands-free on — just talk. Say “Hey BolOrder” to wake me.' : (lang === 'hi' ? 'हैंड्स-फ्री चालू — बोलिए। “हे बोलऑर्डर” कहकर जगाइए।' : 'Hands-free on — boliye. "Hey BolOrder" karke jagaiye.'))
+      : HINTS[lang];
+    if(handsFree){
+      try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+      speaking = false;
+      addBubble('agent', T[lang].hfOn());
+      setStatus('speaking', 'Speaking');
+      speak(T[spkLang()].hfOn(), function(){ if(handsFree) startListening(); });
+    } else {
+      try{ if(rec) rec.stop(); }catch(e){}
+      setListening(false);
+    }
+  });
+
+  /* ---------- boot ---------- */
+  renderMenu();
+  renderCombos();
+  renderChips();
+  render();
+  el.typeInput.placeholder = PLACEHOLDER[lang];
+  el.hint.textContent = HINTS[lang];
+  addBubble('agent', T.en.greet());
+  greeted = true;
+  renderToday();
+  updateVoiceInfo();
+  if(!SR){
+    el.footnote.innerHTML = 'Voice input needs Chrome or Edge. Type your order above — the same multilingual agent handles it.';
+  }
+  if(!window.speechSynthesis){
+    el.footnote.innerHTML += ' (Spoken replies are not available in this browser.)';
+  }
+})();
+
+</script>
+</body>
+</html>
